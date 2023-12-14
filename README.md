@@ -3,5 +3,5 @@ Git hub repository that contains all the useful scripts for managing electronics
 
 ## Manuals useful for using laboratory instrumentation
 <ul>
-  <li>Manual for performing high-voltage CV curves, exceeding 30V<li>
+  <li>Manual for performing high-voltage CV curves, exceeding 30V [Duck Duck Go](https://duckduckgo.com)
 </ul> 
