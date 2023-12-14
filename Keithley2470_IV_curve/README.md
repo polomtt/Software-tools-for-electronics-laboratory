@@ -1,4 +1,4 @@
-#IV curve with Keithley2470
+# IV curve with Keithley2470
 
 10/11/2023 File Creation
 It allows you to perform a linear voltage sweep and current measurement.
