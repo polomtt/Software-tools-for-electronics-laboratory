@@ -4,7 +4,7 @@ clearvars;
 close all;
 
 %% parameter to be set
-curr_compl      = '100e-6';         % [A]
+current_compliance      = '100e-6';         % [A]
 max_voltage     = -5;               % value with sign [V]
 voltage_step    = 1;                % absolute value  [V]
 voltage_step_back = 1;              % absolute value [V]
@@ -31,9 +31,8 @@ fprintf(Keithley2470.P,':SOUR:VOLT:RANG 200');               % Voltage set range
 if abs(max_voltage)>200
     fprintf(Keithley2470.P,':SOUR:VOLT:RANG 1000');               % Voltage set range 2000V
 
-string = [':SOUR:VOLT:ILIM ',curr_compl];
+string = [':SOUR:VOLT:ILIM ',current_compliance];
 fprintf(Keithley2470.P,string);
-
 
 Keithley2470.cont=0;
 Keithley2470.cond_t = 0;
