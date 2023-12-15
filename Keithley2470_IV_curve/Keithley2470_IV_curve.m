@@ -30,6 +30,7 @@ fprintf(Keithley2470.P,':SOUR:VOLT:RANG 200');               % Voltage set range
 
 if abs(max_voltage)>200
     fprintf(Keithley2470.P,':SOUR:VOLT:RANG 1000');               % Voltage set range 2000V
+end
 
 string = [':SOUR:VOLT:ILIM ',current_compliance];
 fprintf(Keithley2470.P,string);
