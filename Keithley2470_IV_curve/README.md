@@ -3,7 +3,7 @@
 Programma Matlab da usare per effettuare misure di curve IV con il Keithley 2470.
 Per far funzionare il programma bisogna settare i seguenti paramteri che si trovano nella parte iniziale del codice:
 
-+ 'current_compliance
++ `current_compliance`
 
 
 current_compliance      = '100e-6';         % [A]
