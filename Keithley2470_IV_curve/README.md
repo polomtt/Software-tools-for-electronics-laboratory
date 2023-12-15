@@ -1,13 +1,12 @@
-# IV curve with Keithley2470
+# IV Curve with Keithley 2470
 
-Programma Matlab da usare per effettuare misure di curve IV con il Keithley 2470.
-Per far funzionare il programma bisogna settare i seguenti paramteri che si trovano nella parte iniziale del codice:
+Matlab program to be used for conducting IV curve measurements with the Keithley 2470. To make the program work, 
+you need to set the following parameters located in the initial part of the code:
 
-+ `current_compliance` [A] è la correnter massima che può essere erogata dallo strumento
-+ `max_voltage` [V] è la tensione massima che si deve applicare al campione in esame, può essere positiva o negativa
-+ `voltage_step` [V] imposta lo step in tensione nella prima fase di misura da 0V a V<sub>set</sub>, da riportare in valore assoluto
-+ `voltage_step_back` [V] imposta lo step in tensione nella prima fase di misura da V<sub>set</sub> a 0V, da riportare in valore assoluto
-+ `filename` il nome del file di output, il file di output avrà la struttura: filename + datetime + ext
-+ `filename_format` è l'estensione del file di output
-+ `Keithley2470.IP` è l'IP dello strumento, da controllare ogni volta all'accensione dello strumento
-
++ `current_compliance` [A] is the maximum current that can be supplied by the instrument.
++ `max_voltage` [V] is the maximum voltage to be applied to the sample under examination, which can be positive or negative.
++ `voltage_step` [V] sets the voltage step in the first measurement phase from 0V to V<sub>set</sub>, to be specified in absolute value.
++ `voltage_step_back` [V] sets the voltage step in the second measurement phase from V<sub>set</sub> to 0V, to be specified in absolute value.
++ `filename` is the name of the output file. The file will have the structure: filename + datetime + ext.
++ `filename_format` is the extension of the output file.
++ `Keithley2470.IP` is the IP address of the Keithley 2470 instrument, to be checked each time the instrument is powered on.
