@@ -28,6 +28,9 @@ fprintf(Keithley2470.P,':SOUR:FUNC VOLT');
 fprintf(Keithley2470.P,':SENS:CURR:RANG:AUTO ON');           % Current set range AUTO
 fprintf(Keithley2470.P,':SOUR:VOLT:RANG 200');               % Voltage set range 200V
 
+if abs(max_voltage)>200
+    fprintf(Keithley2470.P,':SOUR:VOLT:RANG 1000');               % Voltage set range 2000V
+
 string = [':SOUR:VOLT:ILIM ',curr_compl];
 fprintf(Keithley2470.P,string);
 
