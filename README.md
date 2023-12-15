@@ -9,6 +9,6 @@ Git hub repository that contains all the useful scripts for managing electronics
 
 ## Useful scripts for using laboratory instrumentation :wrench:
 +  IV curve with Keithley 2470 [here](Script/Keithley2470_IV_curve)
-+  2D Sensor Scanning[here]( Script/Scansione_laser)
++  2D Sensor Scanning [here]( Script/Scansione_laser)
 
 
