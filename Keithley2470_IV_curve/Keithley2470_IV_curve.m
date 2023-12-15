@@ -4,13 +4,13 @@ clearvars;
 close all;
 
 %% parameter to be set
-curr_compl      = '150e-6';           % [A]
-max_voltage     = -5;              % value with sign [V]
-voltage_step    = 1;               % absolute value  [V]
+curr_compl      = '100e-6';         % [A]
+max_voltage     = -5;               % value with sign [V]
+voltage_step    = 1;                % absolute value  [V]
 voltage_step_back = 1;              % absolute value [V]
 filename = 'pad';
 filename_format = '.txt';           % filename structure: filename + datetime + .txt
-Keithley2470.IP = '10.196.31.142' ;  % check and modify each time
+Keithley2470.IP = '10.196.31.142' ; % check and modify each time
 
 %% Create and init Keithley TCPIP object
 Keithley2470.P = tcpip(Keithley2470.IP,5025);                % Create the TCPIP object
@@ -34,7 +34,6 @@ fprintf(Keithley2470.P,string);
 
 Keithley2470.cont=0;
 Keithley2470.cond_t = 0;
-%Keithley2470.kei_comp = 20;
 Keithley2470.kei_volt = max_voltage;                    % voltage sweep
 Keithley2470.kei_curr = 0;
 Keithley2470.kei_volt_step = voltage_step;              % voltage step during curve
@@ -71,7 +70,6 @@ f1 = figure;
 ax = gca;
 ax.YScale = 'log';
 
-
 %% Working cycle
 while Keithley2470.cont < Keithley2470.cont_lmt
     tic
@@ -103,7 +101,7 @@ while Keithley2470.cont < Keithley2470.cont_lmt
     help_curr = abs(str2num(measure_curr));
         
     % saving data into vector
-    if help_curr<(1e-3)
+    if help_curr<(1)
         voltage_vector(Keithley2470.time)=Keithley2470.kei_volt_act;
         current_vector(Keithley2470.time)=help_curr;
     end
