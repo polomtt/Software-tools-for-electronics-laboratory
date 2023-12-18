@@ -54,6 +54,7 @@ global h_Ctrl;
 
     % Crea interfaccia grafica dei motori e li configura
     h_motor_Left = actxcontrol('MGMOTOR.MGMotorCtrl.1', [0 410 300 200], fig);
+
     SetMotor(h_motor_Left, 83815665, ParamSet);
     h_motor_Right = actxcontrol('MGMOTOR.MGMotorCtrl.1', [300 410 300 200], fig);
     SetMotor(h_motor_Right, 83815649, ParamSet);
