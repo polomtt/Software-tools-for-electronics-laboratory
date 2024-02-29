@@ -34,7 +34,7 @@ fopen(myScope);
 
 % Turn headers off, this makes parsing easier
 fprintf(myScope, 'HEADER OFF');
-fprintf(myScope, 'HORizontal:RECOrdlength 10000');
+fprintf(myScope, 'HORizontal:RECOrdlength 10000000');
 
 % Get record length value
 recordLength = query(myScope, 'HOR:RECO?');
