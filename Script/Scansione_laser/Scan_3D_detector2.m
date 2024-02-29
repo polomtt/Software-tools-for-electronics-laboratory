@@ -1,11 +1,12 @@
 function [ud_handle] =  Scan_3D_detector2
-%% NOTE
-%  1) motore sinistra -> asse x, motore destra -> asse y
+    %% NOTE
+    %  1) motore sinistra -> asse x, motore destra -> asse y
+    
+    global h_Ctrl;
 
-global h_Ctrl;
-%%%%%%%%%%%%%%%%%
-%% Inizializza %%
-%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%
+    %% Inizializza %%
+    %%%%%%%%%%%%%%%%%
     % apre una question dialog box
     button = questdlg('About to launch the APT window - do not run if another APT window is open.  Do you want to open the APT window?', ...
                   'Launch APT window', 'Yes', 'No', 'No');
@@ -18,9 +19,9 @@ global h_Ctrl;
     % Parametri
     ParamSet = 'FIRST_STEPS'; % Nome del setting gia'  inizializzato usando l'APT User program
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Crea un oggetto figura grafica %%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %% Crea un oggetto figura grafica %%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     fig = figure('Position', [5 35 1272 912], 'HandleVisibility', 'on', 'IntegerHandle', 'off', ...
                 'Name', 'APT Interface', 'NumberTitle', 'off', 'DeleteFcn', 'APT_figure_delete_fcn');
 
@@ -37,9 +38,10 @@ global h_Ctrl;
     ud.h_Ctrl = h_Ctrl;
     set(fig, 'UserData', ud);
 
-%%%%%%%%%%%%%%%%%%%%%%%%
-%% Configura i motori %%    %% MOTORE SINISTRA X;  MOTORE DESTRA Y;
-%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%
+    %% Configura i motori %%    %% MOTORE SINISTRA X;  MOTORE DESTRA Y;
+    %%%%%%%%%%%%%%%%%%%%%%%%
+
     [temp, num_motor] = h_Ctrl.GetNumHWUnits(6, 0);
     %controllo numero motori
     if num_motor ~= 2  
@@ -50,7 +52,7 @@ global h_Ctrl;
     % Ottengo il numero seriale del primo (index 0) e del secondo dispositivo (index1)
     [temp, SN_motor{1}] = h_Ctrl.GetHWSerialNum(6, 0, 0); 
     [temp, SN_motor{2}] = h_Ctrl.GetHWSerialNum(6, 1, 0); 
-    SN_motor
+    disp(SN_motor);
 
     % Crea interfaccia grafica dei motori e li configura
     h_motor_Left = actxcontrol('MGMOTOR.MGMotorCtrl.1', [0 410 300 200], fig);
@@ -64,9 +66,10 @@ global h_Ctrl;
     set(fig, 'UserData', ud);
     ud_handle = ud;
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Crea pulsante per fermare APT %%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %% Crea pulsante per fermare APT %%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
     uicontrol(fig, 'Style', 'pushbutton', 'String', 'Stop APT interface',...
             'Position', [0 300 120 20],...
             'Callback',@Stop_APT_interface);        
@@ -75,11 +78,10 @@ global h_Ctrl;
         APT_figure_delete_fcn(ud_handle);
     end
 
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Configurazione grafica dell'interfaccia di controllo utente %%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %% Configurazione grafica dell'interfaccia di controllo utente %%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
     % Label dX,[um]
     uicontrol(fig,'Style','text',...
                 'String','dX,[um] = ',...
@@ -114,7 +116,7 @@ global h_Ctrl;
      % String default time_scale
     handle_Scan_options.time_scale = uicontrol(fig, 'Style','edit',...
                 'String','10e-9',...
-                'Position',[255 240 50 20], 'Callback', @step_Callback)  
+                'Position',[255 240 50 20], 'Callback', @step_Callback);  
             
     % String default step
     handle_Scan_options.step = uicontrol(fig, 'Style','edit',...
@@ -141,13 +143,12 @@ global h_Ctrl;
         handle_Scan_options = guidata(src);
     end
     
-
     function Prepare_scan(src, evt) 
         handle_Scan_options = guidata(src);
 
-        Value_dX   = str2num(get(handle_Scan_options.dX,'String'))
-        Value_dY   = str2num(get(handle_Scan_options.dY,'String'))
-        Value_step = str2num(get(handle_Scan_options.step,'String'))
+        Value_dX   = str2num(get(handle_Scan_options.dX,'String'));
+        Value_dY   = str2num(get(handle_Scan_options.dY,'String'));
+        Value_step = str2num(get(handle_Scan_options.step,'String'));
  
         if  (Value_dX<0)|(Value_dX>12000)
             questdlg('Put proper values', 'Warning', 'Ok','Ok');
@@ -163,44 +164,23 @@ global h_Ctrl;
     end
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%SCALA TEMPI acquisizione
-
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%SCALA TEMPI acquisizione
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   
     %inizializzazione oscilloscopio
     [deviceObj_r] = initialize_oscilloscope_Rob;
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
-%%%%%%%%%%%%%%%%%%%%%%%%%%       
-%% Funzione Make_scan2  %%
-%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-         
-%Creazione pulsante di avvio Make_scan2   
-    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%       
+    %% Funzione Make_scan2  %%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%   
  
-    
     uicontrol(fig, 'Style', 'pushbutton', 'String', 'Make scan 2',...
               'Position', [450 370 120 20],...
               'Callback', @Make_scan2);
-            
-
-          
-          
-          
-          
-          
-          %implementazione        
+     
     function Make_scan2(hObject, eventdata, handles)
-        
-  reply=0;      
-        
-%azzoro il file tempo
-formichiere='';
-save('Data/temp.txt', 'formichiere', '-ASCII');
- time=fix(clock);
- save('Data/temp2.txt', 'time', '-ASCII', '-append');
         
         % controlla se la cartella Data esiste altrimenti la crea
         if exist('Data','dir')~=7 
@@ -208,9 +188,15 @@ save('Data/temp.txt', 'formichiere', '-ASCII');
         end        
         if exist('Data2/temp.txt','file') 
             delete('Data2/temp.txt');
-        end        
-        pause(1);
+        end       
         
+        %azzoro il file tempo
+        formichiere='';
+        save('Data/temp.txt', 'formichiere', '-ASCII');
+        time=fix(clock);
+        save('Data/temp2.txt', 'time', '-ASCII', '-append');
+                
+        pause(1);
         
         %Calcola la matrice dimensione: divide dX e dY e step di 1000 in
         %modo da passare da decimetri di um (unita'  di misura dei motori) a millimetri
@@ -219,7 +205,7 @@ save('Data/temp.txt', 'formichiere', '-ASCII');
         Value_dY   = str2num(get(handle_Scan_options.dY,'String'))/1000;
         Value_step = str2num(get(handle_Scan_options.step,'String'))/1000;
         
-        time_scale=str2num(get(handle_Scan_options.time_scale,'String'))*10%% (10tacche perchè la get_wave vuole Horizontal_Time_Per_Record)
+        time_scale = str2num(get(handle_Scan_options.time_scale,'String'))*10%% (10tacche perchè la get_wave vuole Horizontal_Time_Per_Record);
         
         %L'annomontare di step scannarizzati e' doppio rispetto a quanto
         %richiesto dall'utente: infatti il punto zero (punto d'inizio dei
@@ -248,40 +234,37 @@ save('Data/temp.txt', 'formichiere', '-ASCII');
         output = ud.h_motor_Left.MoveRelative(0, true)
         ud.h_motor_Right.SetRelMoveDist(0, Value_dY/(-1));       
         output = ud.h_motor_Right.MoveRelative(0, true)
-%aaa=2    
        
         Mean_value = zeros(m,n);%crea matrice mxn di zeri
         Mean_value_area = zeros(m,n);%crea matrice mxn di zeri
         Mean_value_max = zeros(m,n);%crea matrice mxn di zeri  (Ch1)
         Mean_value_max2 = zeros(m,n);%crea matrice mxn di zeri (Ch3)
 
- scrsz = get(0,'ScreenSize')
-
-figure('Position',[1 scrsz(4)/2 scrsz(3)/2 scrsz(4)/2])
+        scrsz = get(0,'ScreenSize');
+        figure('Position',[1 scrsz(4)/2 scrsz(3)/2 scrsz(4)/2])
 
         subplot(2,4,3) % first subplot
         fig = bar3(Mean_value);         %crea grafico 3d barre              
         set(gca,'ZTick',[0:5:100]);     %gestione dell'asse della figura corrente     
-
-%aaa=3          
+        
         % m - corrisponde a asse Y
         % n - corrisponde a asse X
 
-close
-I=figure(1)
-immagine=(imread('dopo.jpg'));
-g=imshow(immagine)
-h = uicontrol('Position',[20 20 200 40],'String','Continue',...
-              'Callback','uiresume(gcbf)');
-disp('Close to continue');
-uiwait(gcf); 
-close(I)
+        close
+        I=figure(1);
+        immagine=(imread('dopo.jpg'));
+        g=imshow(immagine);
+        h = uicontrol('Position',[20 20 200 40],'String','Continue',...
+                      'Callback','uiresume(gcbf)');
+        disp('Close to continue');
+        uiwait(gcf); 
+        close(I)
 
         [wave,assex]=get_wave2(deviceObj_r,'noise',time_scale);
  
-I=figure(1)
+I=figure(1);
 immagine=(imread('prima.jpg'));
-g=imshow(immagine)
+g=imshow(immagine);
 h = uicontrol('Position',[20 20 200 40],'String','Continue',...
               'Callback','uiresume(gcbf)');
 disp('Close to continue');
@@ -294,34 +277,29 @@ close(I)
                     % acquisisce i dati
                     nomefile=strcat('scan_Y-',num2str(i),'scan_X-',num2str(j),'.txt');
                     
-%aaa=3000                  
-
                     [Mean_value_area(i,j),Mean_value_max(i,j),Mean_value_max2(i,j),waveform_new]= get_wave_NO_Noise_sub(deviceObj_r,nomefile,time_scale);
                     %Mean_value_area(i,j)= get_wave(deviceObj_r,nomefile,time_scale, wave);
 
                     
                     temporary_solution(1) = j;
-%aaa=300
+
                     temporary_solution(2) = i;
                     temporary_solution(3) = Mean_value_area(i,j);
                     temporary_solution(4) = Mean_value_max(i,j);
                     temporary_solution(5) = Mean_value_max2(i,j);
-                    %save2( i, j, 'temp.txt','y')
                    
                     
                     save('Data/temp.txt', 'temporary_solution', '-ASCII', '-append');
                     save('Data/temp2.txt', 'temporary_solution', '-ASCII', '-append');
-%aaa=3
-%temporary_solution
-%bbb=3
+
                     % Creiamo il grafico dei dati con barre di colore
                     % corrispondente alla loro altezza usando dubbed
                     % Mean_value_mod array
                     
-                       subplot(2,4,2) % first subplot
-                       Mean_value_mod = Mean_value_area;
+                    subplot(2,4,2) % first subplot
+                    Mean_value_mod = Mean_value_area;
                     %COMMENTATO PER CONFIGURARE SCALA VOLTAGGI
-                     plot_handle = bar3(Mean_value_mod);  
+                    plot_handle = bar3(Mean_value_mod);  
            
                     
                         for k = 1:n                         % ciclo che va riga per riga
@@ -406,9 +384,9 @@ close(I)
                     %pause(1); %pausa di un secondo
                     ud.h_motor_Left.SetRelMoveDist(0, Value_step); %muovo il motore di sinistra (asse X) di uno step verso destra  
                     output = ud.h_motor_Left.MoveRelative(0, true);
-%aaa=8      
+   
             end  %fine ciclo j (ho finito di scorrere tutta la riga X)
-%aaa=4            
+            
             % quando siamo a fine riga, attendiamo che entrambi i motori siano fermi 
             %dopodiche' torniamo al punto N=1 della riga successiva 
             wait_stop(h_motor_Right)
@@ -426,8 +404,7 @@ close(I)
             output = ud.h_motor_Right.MoveRelative(0, true)
                  
         end % fine ciclo i (ho finito di scorrere pure le colonneY)
-        
-%aaa=5        
+      
     %%%%%%%OPERAZIONI DI FINE SCANSIONE%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % OBIETTIVO: TORNARE ALLA POSIZIONE INIZIALE, cioè in (DX,DY) nel    %%
     %   sistema di riferimento della griglia:                            %%
@@ -443,8 +420,6 @@ close(I)
     ud.h_motor_Left.SetRelMoveDist(0, Value_dX);
     output = ud.h_motor_Left.MoveRelative(0, true);
 
-    
-   
     %Riportiamo il motore di destra alla posizione iniziale: muoviamo il
     %motore destro(asseY) indietro di un valore DY , quando entrambi i motori sono fermi
     % TO DO: tenere d'occhio per possibili errori di reset della Y
@@ -454,17 +429,12 @@ close(I)
 
     ud.h_motor_Right.SetRelMoveDist(0, Value_dY*(-1));
     output = ud.h_motor_Right.MoveRelative(0, true);
-    
-    
-%aaa=6
-
+   
     % copiamo il file temp.txt in un file con nome definito dall'utente
     filenamedefault = strcat('Data/Scan_',num2str(Value_dX*1000),'x',num2str(Value_dY*1000),'_',num2str(Value_step*1000),'um_step.txt')
     [FileName,PathName] = uiputfile(filenamedefault,'Save data')
     copyfile('Data/temp.txt', strcat(PathName,FileName));
 
     end
-    
-    
-%%
+
 end %% end of APT_interface function

@@ -8,6 +8,5 @@ for i = 1:10
     pause(0.1);
 end
 legend();
-%xlabel('Samples');
-%ylabel('Voltage');
+
 obj_osci.close_connection_oscilloscope();
