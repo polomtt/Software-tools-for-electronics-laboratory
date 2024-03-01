@@ -12,7 +12,7 @@ Git hub repository that contains all the useful scripts for managing electronics
 +  2D Sensor Scanning [here]( Script/Scansione_laser)
 +  Acqusition wave with oscilloscope [here]( Script/Acqusition_wave_oscilloscope )
 +  Acquire data powermeter newport [here]( Script/Power_meter_Newport )
-+  Measure current Keytley2470 for long time [here]( Script/Measure_Keytley2470_for_long time )
++  Measure current Keytley2470 for long time [here]( Script/Measure_Keytley2470_for_long_time )
 
 	
 
