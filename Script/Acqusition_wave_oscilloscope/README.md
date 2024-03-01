@@ -1,4 +1,3 @@
-
 # Acquisition wave oscilloscope
 
 Matlab program to be used for acquire waveform with Tektronic oscilloscope:
