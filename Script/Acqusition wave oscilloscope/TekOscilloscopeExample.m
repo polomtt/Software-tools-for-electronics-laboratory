@@ -15,7 +15,8 @@ instrreset;
 % Provide the Resource name of the oscilloscope - Note you will have to
 % change this to match your oscilloscope.
 
-visaAddress = 'TCPIP0::10.196.31.122::inst0::INSTR';
+%visaAddress = 'TCPIP0::10.196.31.122::inst0::INSTR';
+visaAddress = 'TCPIP0::10.196.30.225::inst0::INSTR';
 filename = "pad";
 num_wave = 5;
 ch_1_enable = true;
@@ -24,7 +25,7 @@ ch_2_enable = false;
 % Create a VISA object and set the |InputBufferSize| to allow for transfer
 % of waveform from oscilloscope to MATLAB. Tek VISA needs to be installed.
 myScope = visa('ni', visaAddress);
-myScope.InputBufferSize = 1e8;
+myScope.InputBufferSize = 1e9;
 
 % Set the |ByteOrder| to match the requirement of the instrument
 myFgen.ByteOrder = 'littleEndian';
@@ -34,7 +35,7 @@ fopen(myScope);
 
 % Turn headers off, this makes parsing easier
 fprintf(myScope, 'HEADER OFF');
-fprintf(myScope, 'HORizontal:RECOrdlength 10000000');
+fprintf(myScope, 'HORizontal:RECOrdlength 10000');
 
 % Get record length value
 recordLength = query(myScope, 'HOR:RECO?');
