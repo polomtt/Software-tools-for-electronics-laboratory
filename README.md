@@ -10,7 +10,7 @@ Git hub repository that contains all the useful scripts for managing electronics
 ## Useful scripts for using laboratory instrumentation :wrench:
 +  IV curve with Keithley 2470 [here](Script/Keithley2470_IV_curve)
 +  2D Sensor Scanning [here]( Script/Scansione_laser)
-+  Acqusition wave with oscilloscope [here]( Script/Acqusition wave oscilloscope)
++  Acqusition wave with oscilloscope [here]( Script/Acqusition_wave_oscilloscope )
 Acqusition wave oscilloscope
 	
 Update README.md
