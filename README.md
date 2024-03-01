@@ -10,32 +10,9 @@ Git hub repository that contains all the useful scripts for managing electronics
 ## Useful scripts for using laboratory instrumentation :wrench:
 +  IV curve with Keithley 2470 [here](Script/Keithley2470_IV_curve)
 +  2D Sensor Scanning [here]( Script/Scansione_laser)
-+  Acqusition wave with oscilloscope [here]( Script/Acqusition wave oscilloscope)
-Acqusition wave oscilloscope
++  Acqusition wave with oscilloscope [here]( Script/Acqusition_wave_oscilloscope )
++  Acquire data powermeter newport [here]( Script/Power_meter_Newport )
++  Measure current Keytley2470 for long time [here]( Script/Measure_Keytley2470_for_long time )
+
 	
-Update README.md
-	
-Keithley2470_IV_curve
-	
-Update new file
-	
-Keitley_2450
-	
-Update new file
-	
-Measure Keytley2470 for long time
-	
-Update
-	
-Power meter Newport
-	
-Update
-	
-Scansione_laser
-	
-Add acquisition oscilloscope
-	
-Scansione_laser_v2
-	
-Add acquisition oscilloscope
 
