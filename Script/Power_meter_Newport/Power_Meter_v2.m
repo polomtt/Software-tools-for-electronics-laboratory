@@ -18,7 +18,7 @@ acquire_mode = false;   % if you need to check the code without instrument -> fa
 
 %Create stop button
 breakLoopFigure = figure('color','w','Name','Plotter');
-breakLoopFigure.Position = [612 320 640 480];
+breakLoopFigure.Position = [612 200 640 480];
 breakLoopFigure.Visible = "on";
 breakLoopFigure.Units = "normalized";
 ButtonHandle = uicontrol('Style', 'PushButton','String', 'Stop loop','Callback', 'delete(gcbf)');
