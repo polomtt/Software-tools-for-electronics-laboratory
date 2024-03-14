@@ -7,6 +7,8 @@ global h;
 global h_motor_Left;
 global h_motor_Right;
 
+% Flag -> true = plot raw data
+% Flag -> false = don't plot data
 PlotFlag = false;                                                           % If you want to plot the obtained waves choose true, otherwise, if you want only
                                                                             % the data, write false
 
@@ -17,7 +19,7 @@ ch2_enable = false;
 % Setting sample dimensions and motor step size
 hor_length = 50*1e-3;                                                       % Sample horizontal length to sweep [mm]
 lat_length = 30*1e-3;                                                       % Sample lateral lenght to sweep [mm]
-Step_Size = 1e-2;                                                           % Motor step size [mm]
+Step_Size = 1*1e-2;                                                         % Motor step size [mm]
 % Safety Check for incorrect step size or sample lengths values
 if hor_length / Step_Size < 1
     fprintf('Warning! Incorrect step size selected.\n');
@@ -142,10 +144,12 @@ pause(2);
 fprintf('Performing sweep... \n')
 
 % Initialising empty temp save vectors
-ch1_tmp = zeros(Hor_value+1,length(noise))';
-ch2_tmp = zeros(Hor_value+1,length(noise))';
-ch1_waves = zeros(Hor_value+1,length(noise))';
-ch2_waves = zeros(Hor_value+1,length(noise))';
+ch1_tmp = zeros(1,length(noise))';
+ch2_tmp = zeros(1,length(noise))';
+ch_waves = zeros(2*(Lat_value+1),length(noise))';
+
+datetime.setDefaultFormats('default','yyyyMMdd_hhmm')
+t = datetime('now');
 
 for i = 1:Lat_value+1
     pos_Y = h_motor_Right.GetPosition_Position(0) - Start_Y;
@@ -159,10 +163,14 @@ for i = 1:Lat_value+1
         
         % Acquiring the signal wave
         tmp_wave = OscilloAcquisition_notxt(OSCI_ID, ch1_enable, ch2_enable, 5);
-        % Processing the signal in order to obtain the mean signal later
-        ch1_tmp(:,j) = tmp_wave(:,2)*(1/(Lat_value+1)) ;
-        ch2_tmp(:,j) = tmp_wave(:,3)*(1/(Lat_value+1)) ;
+        % Removing noise component
+        ch1_tmp(:,1) = tmp_wave(:,2) - noise(:,2) ;
+        ch2_tmp(:,1) = tmp_wave(:,3) - noise(:,3);
         pause(0.1);
+        
+        % Saving on a txt the mean wave signal
+        filename_txt = strcat('wave_pad_Y_',num2str(i),'_X_',num2str(j),'_',char(t));
+        SaveWave(tmp_wave(:,1),ch1_tmp(:,1),ch2_tmp(:,1),filename_txt);
         
         % Moving the laser
         h_motor_Left.SetRelMoveDist(0, Step_Size);                          % Setting relative movement of motor along X-axis of one step
@@ -170,11 +178,9 @@ for i = 1:Lat_value+1
         pause(0.1);                                                         % Pausing to avoid jerk motion
         
     end
-    
-    % Generating the mean signal
-    ch1_waves =  ch1_waves + ch1_tmp;                                       % Channel 1 mean wave signal, every column represent the aquired data of 1 step
-    ch2_waves =  ch2_waves + ch2_tmp;                                       % Channel 2 mean wave signal, every column represent the aquired data of 1 step
-    pause(0.1);
+    % Generating signal matrix [ch1_1, ch1_2,... | ch2_1, ch2_2,...]
+    ch_waves(:,i) = ch1_tmp(:,1); 
+    ch_waves(:,i+(Lat_value+1)) = ch2_tmp(:,1);
     % Make sure that both motors are still before acquiring waveform
     wait_stop(h_motor_Left);
     wait_stop(h_motor_Right);
@@ -192,12 +198,7 @@ for i = 1:Lat_value+1
 end
 fprintf('Sweep completed.\n')
 % Saving on a txt the mean wave signal
-for i = 1:Hor_value+1
-    datetime.setDefaultFormats('default','yyyyMMdd_hhmm')
-    t = datetime('now');
-    filename_txt = strcat('mean_wave_pad_',num2str(i),'_',char(t));
-    SaveWave(tmp_wave(:,1),ch1_waves(:,i),ch2_waves(:,i),filename_txt);
-end
+
 
 %% Returning to Initial Position
 fprintf('Returning to initial position...\n')
@@ -213,7 +214,7 @@ wait_stop(h_motor_Left);
 h_motor_Right.SetAbsMovePos(0, Start_Y);                                    % Setting absolute Y position back to its starting point
 h_motor_Right.MoveAbsolute(0, true);
 wait_stop(h_motor_Right);
-
+%
 % Checking if we returned to the starting position correctly
 pos_Y = h_motor_Right.GetPosition_Position(0) - Start_Y;
 pos_X = h_motor_Left.GetPosition_Position(0) - Start_X;
@@ -225,60 +226,11 @@ end
 % Plotting the mean waves for each longitudinal step
 if PlotFlag
     if ch1_enable
-        PlotWaves(tmp_wave(:,1),ch1_waves,'Acquired Waves');
+            PlotWaves(tmp_wave(:,1),ch_waves(:,1:Lat_value+1),'Acquired Waves CH1');
     elseif ch2_enable
-        PlotWaves(tmp_wave(:,1),ch2_waves,'Acquired Waves');
+            PlotWaves(tmp_wave(:,1),ch_waves(:,Lat_value+1:2*(Lat_value+1)),'Acquired Waves CH2');
     end
 end
-
-%% Maximum value extraction
-button = questdlg('Do you want to extract the maximum value of each acquired waves?', ...
-                  'Maximum Procedure', 'Yes', 'No', 'No');
-% Stop program if dialog box closed or if close has been pressed 
-if isempty(button)
-    fprintf('Task Aborted.\n')
-    APTrelease(h,h_motor_Left,h_motor_Right,fig);
-    return
-elseif length(button) == 2
-    fprintf('Task Aborted.\n')
-    APTrelease(h,h_motor_Left,h_motor_Right,fig);
-    return
-end
-% Initialising empty max values vector
-maximums = zeros(1,Hor_value+1)';
-
-% Extracting values
-if ch1_enable
-    for i = 1:Hor_value+1
-        maximums(i,1) = max(abs(ch1_waves(:,i)));
-    end
-elseif ch2_enable
-    for i = 1:Hor_value+1
-        maximums(i,1) = max(abs(ch2_waves(:,i)));
-    end
-end
-
-% Plotting the maximum w.r.t position
-pos = 0:Step_Size:hor_length;
-figure('Name','Maximum Plot')
-hold on;
-grid on;
-plot(pos(:),maximums(:,1),'r*');
-xlabel('Relative position on sample [mm]');
-ylabel('Volts');
-title('Maximum data values for each step');
-
-% Saving maximum w.r.t position on a txt file
-fprintf('Saving maximum values...\n');
-datetime.setDefaultFormats('default','yyyyMMdd_hhmm')
-t = datetime('now');
-str_file = strcat('data\','Max_pad_',char(t),'.txt');
-fid = fopen(str_file, 'w');
-fprintf(fid,'x,max\n');
-for i=1:length(pos)
-    fprintf(fid,'%e,%f\n',pos(i),maximums(i,1));
-end
-fclose(fid);
 
 %% Clean up APT interface
 APTrelease(h,h_motor_Left,h_motor_Right,fig);
