@@ -8,13 +8,15 @@
 
         `echo "filename T V1 V2 ... VN" > voltage_set_file`
 
-            + Con questa riga i dati vengono salvati in un file chiamato `filename`
-            + Il programma esegue la segunte misura:
+        + Con questa riga i dati vengono salvati in un file chiamato `filename`
+        + Il programma esegue la segunte misura:
 
-                V1 per un tempo T (s)
-                V2 per un tempo T (s)
-                ...
-                VN per un tempo T (s)
+            ```
+            V1 per un tempo T (s)
+            V2 per un tempo T (s)
+            ...
+            VN per un tempo T (s)
+            ```
 
 
 
