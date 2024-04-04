@@ -14,5 +14,8 @@ Git hub repository that contains all the useful scripts for managing electronics
 +  Acquire data powermeter newport [here]( Script/Power_meter_Newport )
 +  Measure current Keytley2470 for long time [here]( Script/Measure_Keytley2470_for_long_time )
 
+## Additional material 
+Spare material, see [REAMDE](Additional_material/Thorlabs_DT12_replacement_parts/README)
+
 	
 
