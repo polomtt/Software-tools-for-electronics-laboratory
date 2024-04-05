@@ -13,6 +13,7 @@ Git hub repository that contains all the useful scripts for managing electronics
 +  Acqusition wave with oscilloscope [here]( Script/Acqusition_wave_oscilloscope )
 +  Acquire data powermeter newport [here]( Script/Power_meter_Newport )
 +  Measure current Keytley2470 for long time [here]( Script/Measure_Keytley2470_for_long_time )
++  Script to save in a CSV file the values measured by the oscilloscope [here]( Script/Query_for_tek_oscilloscope )
 
 ## Additional material :triangular_ruler:
 +  Spare material, see [here](Additional_material/README.md)
