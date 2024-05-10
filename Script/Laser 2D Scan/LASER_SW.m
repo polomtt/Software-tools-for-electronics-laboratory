@@ -19,12 +19,14 @@ ch2_enable = false;
 % Setting sample dimensions and motor step size
 hor_length = 50*1e-3;                                                       % Sample horizontal length to sweep [mm]
 lat_length = 30*1e-3;                                                       % Sample lateral lenght to sweep [mm]
-Step_Size = 1*1e-2;                                                         % Motor step size [mm]
+hor_Step_Size = 1*1e-2;                                                     % X-Motor step size [mm]
+lat_Step_Size = 1*1e-2;                                                     % Y-Motor step size [mm]
+
 % Safety Check for incorrect step size or sample lengths values
-if hor_length / Step_Size < 1
+if hor_length / hor_Step_Size < 1
     fprintf('Warning! Incorrect step size selected.\n');
     return;
-elseif lat_length / Step_Size < 1
+elseif lat_length / lat_Step_Size < 1
     fprintf('Warning! Incorrect step size selected.\n');
     return;
 end
@@ -135,8 +137,8 @@ Start_X = h_motor_Left.GetPosition_Position(0);
 Start_Y = h_motor_Right.GetPosition_Position(0);
 
 % Obtaining the number of steps
-Hor_value = ceil(hor_length/Step_Size);
-Lat_value = ceil(lat_length/Step_Size);
+Hor_value = ceil(hor_length/hor_Step_Size);
+Lat_value = ceil(lat_length/lat_Step_Size);
 
 % Sweep cycle 
 fprintf(['Initial Position: X: '  num2str(Start_X) ' Y: '  num2str(Start_Y) ' -> (0,0) \n']);
@@ -147,7 +149,7 @@ fprintf('Performing sweep... \n')
 ch1_tmp = zeros(1,length(noise))';
 ch2_tmp = zeros(1,length(noise))';
 ch_waves = zeros(2*(Lat_value+1),length(noise))';
-
+% Extracting datetime
 datetime.setDefaultFormats('default','yyyyMMdd_hhmm')
 t = datetime('now');
 
@@ -173,23 +175,23 @@ for i = 1:Lat_value+1
         SaveWave(tmp_wave(:,1),ch1_tmp(:,1),ch2_tmp(:,1),filename_txt);
         
         % Moving the laser
-        h_motor_Left.SetRelMoveDist(0, Step_Size);                          % Setting relative movement of motor along X-axis of one step
+        h_motor_Left.SetRelMoveDist(0, hor_Step_Size);                      % Setting relative movement of motor along X-axis of one step
         h_motor_Left.MoveRelative(0, true);                                 % Performing set movement along X-axis
         pause(0.1);                                                         % Pausing to avoid jerk motion
         
     end
-    % Generating signal matrix [ch1_1, ch1_2,... | ch2_1, ch2_2,...]
+    % Generating signal matrix
     ch_waves(:,i) = ch1_tmp(:,1); 
     ch_waves(:,i+(Lat_value+1)) = ch2_tmp(:,1);
     % Make sure that both motors are still before acquiring waveform
     wait_stop(h_motor_Left);
     wait_stop(h_motor_Right);
     % Laterally move the motor by one step
-    h_motor_Right.SetAbsMovePos(0, Start_Y+i*Step_Size);                    % Setting relative movement of motor along Y-axis of one step
+    h_motor_Right.SetAbsMovePos(0, Start_Y+i*lat_Step_Size);                    % Setting relative movement of motor along Y-axis of one step
     h_motor_Right.MoveAbsolute(0, true);                                    % Performing set movement along Y-axis
     % Waiting for Y-axis motor to be still
     wait_stop(h_motor_Right);
-    % Resetting position of X-axis motor to its stargin point
+    % Resetting position of X-axis motor to its starting point
     h_motor_Left.SetAbsMovePos(0, Start_X);                                 % Setting absolute X position back to its starting point
     h_motor_Left.MoveAbsolute(0, true);                                     % Performing set movement along X-axis
     % Waiting for Y-axis motor to be still
@@ -234,4 +236,3 @@ end
 
 %% Clean up APT interface
 APTrelease(h,h_motor_Left,h_motor_Right,fig);
-
