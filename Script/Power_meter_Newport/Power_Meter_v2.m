@@ -14,7 +14,7 @@ folder_name = 'Data';
 sample = "_sp1";
 time_acquisition = 100; % [s]
 time_step = 0.1;        % [s]
-acquire_mode = false;   % if you need to check the code without instrument -> false
+acquire_mode = true;   % if you need to check the code without instrument -> false
 
 %Create stop button
 breakLoopFigure = figure('color','w','Name','Plotter');
