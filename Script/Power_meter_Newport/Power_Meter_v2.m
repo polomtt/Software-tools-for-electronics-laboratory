@@ -13,7 +13,7 @@
 folder_name = 'Data';
 sample = "_sp1";
 time_acquisition = 100; % [s]
-time_step = 0.1;        % [s]
+time_step = 1;        % [s]
 acquire_mode = true;   % if you need to check the code without instrument -> false
 
 %Create stop button
@@ -87,10 +87,10 @@ filename_fig = strcat(folder_name,"\",time_str,"_",sample,".png");
 disp(filename_fig);
 saveas(fig,filename_fig)
 
- disp("__          __  _ _       _                  _ ")
- disp("\ \        / / | | |     | |                | |")
- disp(" \ \  /\  / /__| | |   __| | ___  _ __   ___| |")
- disp("  \ \/  \/ / _ \ | |  / _` |/ _ \| '_ \ / _ \ |")
- disp("   \  /\  /  __/ | | | (_| | (_) | | | |  __/_|")
- disp("    \/  \/ \___|_|_|  \__,_|\___/|_| |_|\___(_)")
+disp("__          __  _ _       _                  _ ")
+disp("\ \        / / | | |     | |                | |")
+disp(" \ \  /\  / /__| | |   __| | ___  _ __   ___| |")
+disp("  \ \/  \/ / _ \ | |  / _` |/ _ \| '_ \ / _ \ |")
+disp("   \  /\  /  __/ | | | (_| | (_) | | | |  __/_|")
+disp("    \/  \/ \___|_|_|  \__,_|\___/|_| |_|\___(_)")
                                                 
