@@ -82,9 +82,9 @@ time_start_programme = time.time()                    # Start the timer...
 instrument_resource_string = "TCPIP0::10.196.31.142::inst0::INSTR"
 resource_manager = visa.ResourceManager()	# Opens the resource manager
 my_instr = None 
-resource_manager, my_instr = instrument_connect(resource_manager, my_instr, instrument_resource_string, 20000, 1, 1, 1)
+resource_manager, my_instr = instrument_connect(resource_manager, my_instr, instrument_resource_string, 20000, 1, 0, 0)
 
-instrument_write(my_instr,'*RST')
+#instrument_write(my_instr,'*RST')
 instrument_write(my_instr,':SOUR:VOLT 0')
 instrument_write(my_instr,':OUTP:STAT OFF')
 instrument_write(my_instr,':ABOR');

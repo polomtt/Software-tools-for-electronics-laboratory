@@ -44,8 +44,6 @@ disp(recordLength);
 % record length
 fprintf(myScope, ['DATA:START 1;DATA:STOP' recordLength]);
 
-
-
 if ch_1_enable
     % Read YMULT to calculate the vertical values
     fprintf(myScope, 'DATa:SOUrce CH1');
