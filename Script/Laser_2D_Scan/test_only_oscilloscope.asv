@@ -1,0 +1,27 @@
+%% Initialization
+clc;
+clearvars;
+close all;
+
+% Flag -> true = plot raw data
+% Flag -> false = don't plot data
+PlotFlag = false;                                                           % If you want to plot the obtained waves choose true, otherwise, if you want only
+                                                                            % the data, write false
+
+OSCI_ID = 'TCPIP0::10.196.30.225::inst0::INSTR';                            % Oscilloscope IP address
+ch1_enable = true;
+ch2_enable = false;
+
+
+noise = OscilloAcquisition(OSCI_ID, ch1_enable, ch2_enable, 5, 'noise_pad');
+
+% Plotting the noise waveform
+figure('Name','Noise Plot')
+plot(noise(:,1),noise(:,2))
+xlabel('Sample Index');
+ylabel('Volts');
+title('Noise Waveform Acquired from Tektronix Oscilloscope');
+grid on;
+
+PlotWaves(noise(:,1),noise(:2),'Acquired Waves CH1');
+
