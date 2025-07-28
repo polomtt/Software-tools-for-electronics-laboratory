@@ -7,6 +7,16 @@ global h;
 global h_motor_Left;
 global h_motor_Right;
 
+
+%  _____                             _____             __ _       
+% |  __ \                           / ____|           / _(_)      
+% | |__) |_ _ _ __ __ _ _ __ ___   | |     ___  _ __ | |_ _  __ _ 
+% |  ___/ _` | '__/ _` | '_ ` _ \  | |    / _ \| '_ \|  _| |/ _` |
+% | |  | (_| | | | (_| | | | | | | | |___| (_) | | | | | | | (_| |
+% |_|   \__,_|_|  \__,_|_| |_| |_|  \_____\___/|_| |_|_| |_|\__, |
+%                                                            __/ |
+%                                                           |___/
+
 % Flag -> true = plot raw data
 % Flag -> false = don't plot data
 PlotFlag = false;                                                           % If you want to plot the obtained waves choose true, otherwise, if you want only
@@ -21,6 +31,22 @@ hor_length = 50*1e-3;                                                       % Sa
 lat_length = 30*1e-3;                                                       % Sample lateral lenght to sweep [mm]
 hor_Step_Size = 1*1e-2;                                                     % X-Motor step size [mm]
 lat_Step_Size = 1*1e-2;                                                     % Y-Motor step size [mm]
+
+%numero medie acquisione 
+num_wave_mean = 4;
+
+folder_name = "3d_detector";
+
+% ###########################################################################
+
+% Extracting datetime
+datetime.setDefaultFormats('default','yyyyMMdd_hhmm')
+t = datetime('now');
+filename_folder = strcat('data\',folder_name,'_',char(t));
+
+if ~exist(filename_folder, 'dir')
+    mkdir(filename_folder);
+end
 
 % Safety Check for incorrect step size or sample lengths values
 if hor_length / hor_Step_Size < 1
@@ -102,7 +128,9 @@ elseif length(button) == 2
 end
 fprintf('Extracting Noise Vector...\n');
 
-noise = OscilloAcquisition(OSCI_ID, ch1_enable, ch2_enable, 5, 'noise_pad');
+noise = OscilloAcquisition(OSCI_ID, ch1_enable, ch2_enable, num_wave_mean);
+filename_txt_noise = strcat(filename_folder,'\','wave_noise');
+SaveWave(noise(:,1),noise(:,2),noise(:,3),filename_txt);
 
 % Plotting the noise waveform
 figure('Name','Noise Plot')
@@ -111,7 +139,6 @@ xlabel('Sample Index');
 ylabel('Volts');
 title('Noise Waveform Acquired from Tektronix Oscilloscope');
 grid on;
-
 
 pause(2);
 fprintf('Noise vector extracted.\n')
@@ -140,6 +167,9 @@ Start_Y = h_motor_Right.GetPosition_Position(0);
 Hor_value = ceil(hor_length/hor_Step_Size);
 Lat_value = ceil(lat_length/lat_Step_Size);
 
+tot_step_num = Hor_value * Lat_value;
+step_now = 0;
+
 % Sweep cycle 
 fprintf(['Initial Position: X: '  num2str(Start_X) ' Y: '  num2str(Start_Y) ' -> (0,0) \n']);
 pause(2);
@@ -149,9 +179,7 @@ fprintf('Performing sweep... \n')
 ch1_tmp = zeros(1,length(noise))';
 ch2_tmp = zeros(1,length(noise))';
 ch_waves = zeros(2*(Lat_value+1),length(noise))';
-% Extracting datetime
-datetime.setDefaultFormats('default','yyyyMMdd_hhmm')
-t = datetime('now');
+
 
 for i = 1:Lat_value+1
     pos_Y = h_motor_Right.GetPosition_Position(0) - Start_Y;
@@ -164,21 +192,26 @@ for i = 1:Lat_value+1
         fprintf(['X: ' num2str(pos_X) '  Y: ' num2str(pos_Y) '\n']);
         
         % Acquiring the signal wave
-        tmp_wave = OscilloAcquisition_notxt(OSCI_ID, ch1_enable, ch2_enable, 5);
+        tmp_wave = OscilloAcquisition(OSCI_ID, ch1_enable, ch2_enable, num_wave_mean);
         % Removing noise component
-        ch1_tmp(:,1) = tmp_wave(:,2) - noise(:,2) ;
-        ch2_tmp(:,1) = tmp_wave(:,3) - noise(:,3);
+        %ch1_tmp(:,1) = tmp_wave(:,2) - noise(:,2) ;
+        %ch2_tmp(:,1) = tmp_wave(:,3) - noise(:,3);
         pause(0.1);
         
         % Saving on a txt the mean wave signal
-        filename_txt = strcat('wave_pad_Y_',num2str(i),'_X_',num2str(j),'_',char(t));
-        SaveWave(tmp_wave(:,1),ch1_tmp(:,1),ch2_tmp(:,1),filename_txt);
+        filename_txt = strcat(filename_folder,'\','wave_','_Y_',num2str(i),'_X_',num2str(j),'_',char(t));
+        % time,ch1,ch2
+        SaveWave(tmp_wave(:,1),tmp_wave(:,2),tmp_wave(:,3),filename_txt);
         
         % Moving the laser
         h_motor_Left.SetRelMoveDist(0, hor_Step_Size);                      % Setting relative movement of motor along X-axis of one step
         h_motor_Left.MoveRelative(0, true);                                 % Performing set movement along X-axis
         pause(0.1);                                                         % Pausing to avoid jerk motion
         
+        step_now = step_now+1;
+
+        disp("Step now ",step_now," -- Total step ",tot_step_num)
+
     end
     % Generating signal matrix
     ch_waves(:,i) = ch1_tmp(:,1); 
