@@ -130,7 +130,7 @@ fprintf('Extracting Noise Vector...\n');
 
 noise = OscilloAcquisition(OSCI_ID, ch1_enable, ch2_enable, num_wave_mean);
 filename_txt_noise = strcat(filename_folder,'\','wave_noise');
-SaveWave(noise(:,1),noise(:,2),noise(:,3),filename_txt);
+SaveWave(noise(:,1),noise(:,2),noise(:,3),filename_txt_noise);
 
 % Plotting the noise waveform
 figure('Name','Noise Plot')
@@ -210,7 +210,7 @@ for i = 1:Lat_value+1
         
         step_now = step_now+1;
 
-        disp("Step now ",step_now," -- Total step ",tot_step_num)
+        fprintf('Step now %d -- Total step %d\n', step_now, tot_step_num);
 
     end
     % Generating signal matrix

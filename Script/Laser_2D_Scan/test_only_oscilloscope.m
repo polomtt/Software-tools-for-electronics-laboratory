@@ -13,7 +13,7 @@ ch1_enable = true;
 ch2_enable = true;
 
 
-noise = OscilloAcquisition(OSCI_ID, ch1_enable, ch2_enable, 5, 'noise_pad');
+noise = OscilloAcquisition(OSCI_ID, ch1_enable, ch2_enable, 5);
 
 PlotWaves(noise(:,1),noise(:,2),'Acquired Waves CH1');
 PlotWaves(noise(:,1),noise(:,3),'Acquired Waves CH2');
