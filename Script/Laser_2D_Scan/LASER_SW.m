@@ -7,40 +7,20 @@ global h;
 global h_motor_Left;
 global h_motor_Right;
 
+configFile = 'config.m';
 
-%  _____                             _____             __ _       
-% |  __ \                           / ____|           / _(_)      
-% | |__) |_ _ _ __ __ _ _ __ ___   | |     ___  _ __ | |_ _  __ _ 
-% |  ___/ _` | '__/ _` | '_ ` _ \  | |    / _ \| '_ \|  _| |/ _` |
-% | |  | (_| | | | (_| | | | | | | | |___| (_) | | | | | | | (_| |
-% |_|   \__,_|_|  \__,_|_| |_| |_|  \_____\___/|_| |_|_| |_|\__, |
-%                                                            __/ |
-%                                                           |___/
-
-% Flag -> true = plot raw data
-% Flag -> false = don't plot data
-PlotFlag = false;                                                           % If you want to plot the obtained waves choose true, otherwise, if you want only
-                                                                            % the data, write false
-
-OSCI_ID = 'TCPIP0::10.196.30.225::inst0::INSTR';                            % Oscilloscope IP address
-ch1_enable = true;
-ch2_enable = false;
-
-% Setting sample dimensions and motor step size
-hor_length = 50*1e-3;                                                       % Sample horizontal length to sweep [mm]
-lat_length = 30*1e-3;                                                       % Sample lateral lenght to sweep [mm]
-hor_Step_Size = 1*1e-2;                                                     % X-Motor step size [mm]
-lat_Step_Size = 1*1e-2;                                                     % Y-Motor step size [mm]
-
-%numero medie acquisione 
-num_wave_mean = 4;
-
-folder_name = "3d_detector";
+if isfile(configFile)
+    run(configFile);
+else
+    % fprintf('Errore: manca il file di configurazione "%s"!\n', configFile);
+    % % Qui puoi anche decidere di interrompere l'esecuzione con error()
+    error('File di configurazione mancante, interrompo.');
+end
 
 % ###########################################################################
 
 % Extracting datetime
-datetime.setDefaultFormats('default','yyyyMMdd_hhmm')
+datetime.setDefaultFormats('default','yyyyMMdd_HHmm')
 t = datetime('now');
 filename_folder = strcat('data\',folder_name,'_',char(t));
 
@@ -180,10 +160,17 @@ ch1_tmp = zeros(1,length(noise))';
 ch2_tmp = zeros(1,length(noise))';
 ch_waves = zeros(2*(Lat_value+1),length(noise))';
 
+% Moltiplica per 100, converti in intero
+step_value_int_x = round(hor_Step_Size * 1000);
+step_str_x = num2str(step_value_int_x);
 
-for i = 1:Lat_value+1
+% Moltiplica per 100, converti in intero
+step_value_int_y = round(lat_Step_Size * 1000);
+step_str_y = num2str(step_value_int_y);
+
+for i = 1:Lat_value
     pos_Y = h_motor_Right.GetPosition_Position(0) - Start_Y;
-    for j = 1:Hor_value+1
+    for j = 1:Hor_value
         % Make sure that both motors are still before acquiring waveform
         % (Safety check)
         wait_stop(h_motor_Left);
@@ -199,7 +186,7 @@ for i = 1:Lat_value+1
         pause(0.1);
         
         % Saving on a txt the mean wave signal
-        filename_txt = strcat(filename_folder,'\','wave_','_Y_',num2str(i),'_X_',num2str(j),'_',char(t));
+        filename_txt = strcat(filename_folder,'\','wave_','_Y_',num2str(i),'_X_',num2str(j),'_x_',step_str_x,'nm_y_',step_str_y,'nm');
         % time,ch1,ch2
         SaveWave(tmp_wave(:,1),tmp_wave(:,2),tmp_wave(:,3),filename_txt);
         
