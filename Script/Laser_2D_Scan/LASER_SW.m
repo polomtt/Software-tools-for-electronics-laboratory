@@ -161,11 +161,11 @@ ch2_tmp = zeros(1,length(noise))';
 ch_waves = zeros(2*(Lat_value+1),length(noise))';
 
 % Moltiplica per 1000, converti in intero
-step_value_int_x = round(hor_Step_Size * 1000);
+step_value_int_x = round(hor_Step_Size * 1e6);
 step_str_x = num2str(step_value_int_x);
 
 % Moltiplica per 1000, converti in intero
-step_value_int_y = round(lat_Step_Size * 1000);
+step_value_int_y = round(lat_Step_Size * 1e6);
 step_str_y = num2str(step_value_int_y);
 
 for i = 1:Lat_value
@@ -186,7 +186,7 @@ for i = 1:Lat_value
         pause(0.1);
         
         % Saving on a txt the mean wave signal
-        filename_txt = strcat(filename_folder,'\','wave_','_Y_',num2str(i),'_X_',num2str(j),'_x_',step_str_x,'nm_y_',step_str_y,'nm');
+        filename_txt = strcat(filename_folder,'\','wave_','_Y_',num2str(i),'_X_',num2str(j),'_x_',step_str_x,'_y_',step_str_y,'nm');
         % time,ch1,ch2
         SaveWave(tmp_wave(:,1),tmp_wave(:,2),tmp_wave(:,3),filename_txt);
         
