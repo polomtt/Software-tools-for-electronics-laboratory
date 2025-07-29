@@ -160,11 +160,11 @@ ch1_tmp = zeros(1,length(noise))';
 ch2_tmp = zeros(1,length(noise))';
 ch_waves = zeros(2*(Lat_value+1),length(noise))';
 
-% Moltiplica per 100, converti in intero
+% Moltiplica per 1000, converti in intero
 step_value_int_x = round(hor_Step_Size * 1000);
 step_str_x = num2str(step_value_int_x);
 
-% Moltiplica per 100, converti in intero
+% Moltiplica per 1000, converti in intero
 step_value_int_y = round(lat_Step_Size * 1000);
 step_str_y = num2str(step_value_int_y);
 
