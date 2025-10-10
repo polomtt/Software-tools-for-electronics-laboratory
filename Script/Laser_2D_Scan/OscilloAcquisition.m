@@ -101,29 +101,12 @@ end
 
 flushinput(myScope);
 
-t2 = datetime('now');
+% t2 = datetime('now');
 
-disp(between(t2,t1));
+% disp(between(t2,t1));
 
 % Saving the acquired data
 wave_data(:,1) = time(:);
-
-% str_file_mean = strcat('data\',filename,'_mean','.txt');
-% fid_mean = fopen(str_file_mean, 'w');
-% fprintf(fid_mean,'time,ch1_mean,ch2_mean\n');
-% 
-% for j=1:str2double(recordLength)
-%     help1=0;
-%     help2=0;
-%     if ch1_enable
-%         help1 = wave_data(j,2);
-%     elseif ch2_enable
-%         help2 = wave_data(j,3);
-%     end
-%     fprintf(fid_mean,'%e,%f,%f\n',sample_time*j,help1,help2);
-% end
-% 
-% fclose(fid_mean);
 
 % Clean up Close the connection
 fclose(myScope);
