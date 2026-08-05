@@ -1,19 +1,26 @@
-%{
-  _____                                        _            
- |  __ \                                      | |           
- | |__) |____      _____ _ __   _ __ ___   ___| |_ ___ _ __ 
- |  ___/ _ \ \ /\ / / _ \ '__| | '_ ` _ \ / _ \ __/ _ \ '__|
- | |  | (_) \ V  V /  __/ |    | | | | | |  __/ ||  __/ |   
- |_|   \___/ \_/\_/ \___|_|    |_| |_| |_|\___|\__\___|_|   
-                                                                                                                                                                     
-%}
 
+%{
+  _____  __  __ __  __ 
+ |  __ \|  \/  |  \/  |
+ | |  | | \  / | \  / |
+ | |  | | |\/| | |\/| |
+ | |__| | |  | | |  | |
+ |_____/|_|  |_|_|  |_|
+                                                                                                                                                                                 
+%}
+close all
 %Setting parameter
 
 folder_name = 'Data';
 sample = "_sp1";
 time_acquisition = 300; % [s]
 time_step = 1;        % [s]
+xlab_name="Time [s]";
+ylab_name="Current [A]";
+Qty_to_meas= 'MEAS:RES?';
+% Qty_to_meas=':MEAS:VOLT?';
+%Qty_to_meas= ':MEAS:CURR?';
+
 acquire_mode = true;   % if you need to check the code without instrument -> false
 
 %Create stop button
@@ -39,33 +46,40 @@ timer = 0;
 title_fig = strcat(time_str,"_",sample);
 title_fig = strrep(title_fig,"_"," ");
 
-% Connect to instrument object
+
+% SERVE PER CAPIRE l'indirizzo USB corretto, va commentato quadno si ha
+% l'indirizzo, perchè altrimenti si incasina tutto, non so il perchè
+% visaInfo = instrhwinfo('visa', 'ni');
+% disp(visaInfo.ObjectConstructorName);
+
+
 if acquire_mode
-    obj1 = gpib('ni', 0, 5);
+    % Crea l'oggetto VISA per lo strumento USB
+    obj1 = visa('ni','USB0::0x0957::0x0A07::MY46000931::INSTR');
+    % Apre la connessione
     fopen(obj1);
 end
 
 %Data acquisition loop
-
 time_serie = [];
-power_serie = [];
+qty_series = [];
 
 k=1;
 while true && timer<time_acquisition
     if acquire_mode
-        power_meter_meas = query(obj1,'R_A?','%s','%s');
+        DMM_meas = query(obj1,Qty_to_meas,'%s','%s');
     else
-        power_meter_meas = "0";
+        DMM_meas = string(rand);
     end
-    fprintf(fileID,'%2.2f,%s\n',timer,power_meter_meas);
-    fprintf('%.2f,%s\n',timer,power_meter_meas);
+    fprintf(fileID,'%2.2f,%s\n',timer,DMM_meas);
+    fprintf('%.2f,%s\n',timer,DMM_meas);
     timer=timer+time_step;
 
     time_serie(k,1) = timer;
-    power_serie(k,1) = str2double(power_meter_meas);
+    qty_series(k,1) = str2double(DMM_meas);
     k=k+1;
     pause(time_step);
-    plot_graph(time_serie,power_serie,0.7,title_fig);
+    plot_graph(time_serie,qty_series,0.7,title_fig,xlab_name,ylab_name,0);
 
     if ~ishandle(ButtonHandle)
         disp('Loop stopped by user');
@@ -80,9 +94,13 @@ if acquire_mode
     delete(obj1);
 end
 
+[mean_qty,std_dev_qty] = calc_mean(qty_series);
+
+fprintf('%.2e +- %.2e \n',mean_qty,std_dev_qty);
+
 %Print and save the figure
 fig = figure();
-plot_graph(time_serie,power_serie,0.85,title_fig)
+plot_graph(time_serie,qty_series,0.85,title_fig,xlab_name,ylab_name,mean_qty);
 filename_fig = strcat(folder_name,"\",time_str,"_",sample,".png");
 disp(filename_fig);
 saveas(fig,filename_fig)
