@@ -47,10 +47,12 @@ def instrument_disconnect(instrument_object):
 time_set_filename = datetime.datetime.now()
 filename_time = time_set_filename.strftime("%Y%m%d_%H%M%S")
 
-filename = "sample3_vbias_100_source_am241"
-instrument_resource_string = "TCPIP0::10.196.31.127::inst0::INSTR"
+filename = "sr90_aidanova_dsh"
+instrument_resource_string = "TCPIP0::10.196.31.122::inst0::INSTR"
 quantity_to_measure = "AMPlitude"
 acq_time = 600 #in seconds
+
+
 
 f = open("Data/{}_{}.txt".format(filename,filename_time), "w")
 f.write("id,value\n")
@@ -66,10 +68,18 @@ count =0
 
 try:
     while True and (time.time()-time_start_programme)<acq_time:
+        
+        # instrument_write(my_instr, "INITiate")   # arma lo strumento
+        # # # instrument_write(my_instr, "TRG")   # arma lo strumento
+        instrument_query(my_instr, "*WAI")      # aspetta il trigger
+        # # help_trg = instrument_query(my_instr, "TRIGger:STATE?")
+        
         voltage = float(instrument_query(my_instr,':MEASUrement:IMMed:VALue?'))
         if (count%100)==0:
             print("Num event save: {} -- Elapsed time: {:.2f}".format(count,time.time()-time_start_programme))
-            
+        
+        print("{} {}".format(voltage))
+        
         f.write("{},{}\n".format(count,voltage))
         count=count+1
 except KeyboardInterrupt:

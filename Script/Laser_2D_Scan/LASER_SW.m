@@ -178,17 +178,22 @@ for i = 1:Lat_value
         pos_X = h_motor_Left.GetPosition_Position(0) - Start_X;
         fprintf(['X: ' num2str(pos_X) '  Y: ' num2str(pos_Y) '\n']);
         
-        % Acquiring the signal wave
-        tmp_wave = OscilloAcquisition(OSCI_ID, ch1_enable, ch2_enable, num_wave_mean);
-        % Removing noise component
-        %ch1_tmp(:,1) = tmp_wave(:,2) - noise(:,2) ;
-        %ch2_tmp(:,1) = tmp_wave(:,3) - noise(:,3);
-        pause(0.1);
-        
-        % Saving on a txt the mean wave signal
-        filename_txt = strcat(filename_folder,'\','wave_','_Y_',num2str(i),'_X_',num2str(j),'_x_',step_str_x,'_y_',step_str_y,'nm');
-        % time,ch1,ch2
-        SaveWave(tmp_wave(:,1),tmp_wave(:,2),tmp_wave(:,3),filename_txt);
+        try
+            % Acquiring the signal wave
+            tmp_wave = OscilloAcquisition(OSCI_ID, ch1_enable, ch2_enable, num_wave_mean);
+            % Removing noise component
+            %ch1_tmp(:,1) = tmp_wave(:,2) - noise(:,2) ;
+            %ch2_tmp(:,1) = tmp_wave(:,3) - noise(:,3);
+            pause(0.2);
+
+            % Saving on a txt the mean wave signal
+            filename_txt = strcat(filename_folder,'\','wave_','_Y_',num2str(i),'_X_',num2str(j),'_x_',step_str_x,'_y_',step_str_y,'nm');
+            % time,ch1,ch2
+            SaveWave(tmp_wave(:,1),tmp_wave(:,2),tmp_wave(:,3),filename_txt);
+        catch ME
+            fprintf('Error occurred during signal acquisition or saving: %s\n', ME.message);
+            % Do nothing and proceed with the next operations
+        end
         
         % Moving the laser
         h_motor_Left.SetRelMoveDist(0, hor_Step_Size);                      % Setting relative movement of motor along X-axis of one step

@@ -35,7 +35,7 @@ def instrument_disconnect(instrument_object):
     instrument_object.close()
     return
 
-def download_waveform(instrument_object, channel="CH1", n_points=2500):
+def download_waveform(instrument_object, channel="CH2", n_points=1000):
     import struct
 
     # Imposta il canale e l’encoding binario
@@ -80,7 +80,7 @@ filename_time = time_set_filename.strftime("%Y%m%d_%H%M%S")
 
 filename = "sample3_vbias_100_source_am241"
 instrument_resource_string = "TCPIP0::10.196.31.122::inst0::INSTR"
-acq_time = 10  # in seconds
+acq_time = 5  # in seconds
 
 f = open("Data/{}_{}.txt".format(filename, filename_time), "w")
 f.write("id,value\n")
@@ -92,9 +92,9 @@ my_instr = None
 resource_manager, my_instr = instrument_connect(resource_manager, my_instr, instrument_resource_string, 20000, 1, 0, 0)
 
 # 1. Imposta modalità media su 4 campioni
-instrument_write(my_instr, "ACQuire:MODE AVERage")
-instrument_write(my_instr, "ACQuire:NUMAVg 4")
-time.sleep(1)  # attesa per calcolo media
+# # instrument_write(my_instr, "ACQuire:MODE AVERage")
+# # instrument_write(my_instr, "ACQuire:NUMAVg 4")
+# # time.sleep(1)  # attesa per calcolo media
 
 # 2. Imposta misura di ampiezza su CH1
 instrument_write(my_instr, "MEASurement:IMMed:TYPE AMPLitude")
@@ -110,8 +110,8 @@ try:
         if (count % 10) == 0:
             print("Num event save: {} -- Elapsed time: {:.2f}".format(count, time.time() - time_start_programme))
         
-        # wave = download_waveform(my_instr)
-        # plt.plot(wave)
+        wave = download_waveform(my_instr)
+        plt.plot(wave)
         
         
         # f.write("{},{}\n".format(count, voltage))
