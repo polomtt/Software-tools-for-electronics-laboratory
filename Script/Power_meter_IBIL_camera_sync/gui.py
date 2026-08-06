@@ -1,22 +1,23 @@
-import pyvisa
-import time
+"""
+Interfaccia grafica Tkinter per l'acquisizione corrente del Newport 2832C.
+"""
+
 import csv
-import threading
-import queue
-from datetime import datetime
 import os
+import queue
+import threading
+from datetime import datetime
 
 import tkinter as tk
-from tkinter import ttk, filedialog, messagebox
+from tkinter import ttk, messagebox
 
 import matplotlib
 matplotlib.use('TkAgg')
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
-GPIB_RESOURCE = 'GPIB0::5::INSTR'  # verifica indirizzo GPIB sul pannello strumento
-QUERY_COMMAND = 'R_A?'
-POLL_INTERVAL_S = 1.0
+from acquisition_PowerMeter import AcquisitionThread
+from zmq_comm import send_true, send_false
 
 # Palette colori
 COLOR_BG = '#1e1e2e'
@@ -30,52 +31,11 @@ COLOR_STOP_ACTIVE = '#c94a58'
 COLOR_ENTRY_BG = '#33344a'
 
 
-class AcquisitionThread(threading.Thread):
-    """Interroga lo strumento ogni POLL_INTERVAL_S secondi e mette i dati in una coda."""
-
-    def __init__(self, data_queue, stop_event, error_queue):
-        super().__init__(daemon=True)
-        self.data_queue = data_queue
-        self.stop_event = stop_event
-        self.error_queue = error_queue
-
-    def run(self):
-        try:
-            rm = pyvisa.ResourceManager('@py')
-            inst = rm.open_resource(GPIB_RESOURCE)
-            inst.timeout = 5000
-        except Exception as e:
-            self.error_queue.put(f'Errore apertura strumento: {e}')
-            return
-
-        t0 = time.time()
-        try:
-            while not self.stop_event.is_set():
-                loop_start = time.time()
-                try:
-                    response = inst.query(QUERY_COMMAND).strip()
-                    value = float(response)
-                    elapsed = time.time() - t0
-                    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
-                    self.data_queue.put((timestamp, elapsed, value))
-                except ValueError:
-                    self.error_queue.put(f'Risposta non numerica: "{response}"')
-                except Exception as e:
-                    self.error_queue.put(f'Errore query: {e}')
-
-                sleep_time = POLL_INTERVAL_S - (time.time() - loop_start)
-                if sleep_time > 0:
-                    self.stop_event.wait(sleep_time)
-        finally:
-            try:
-                inst.close()
-            except Exception:
-                pass
-
-
 class App(tk.Tk):
-    def __init__(self):
+    def __init__(self, socket):
         super().__init__()
+        self.socket = socket  # socket ZMQ passato dal main
+
         self.title('Newport 2832C - Acquisizione Corrente')
         self.geometry('900x680')
         self.configure(bg=COLOR_BG)
@@ -88,9 +48,14 @@ class App(tk.Tk):
         self.acq_thread = None
         self.csv_file = None
         self.csv_writer = None
-
+                        
         self.times = []
         self.values = []
+        
+        self.ibil_params = {
+            "Tempo_integrazione_[ms]": 100.0,
+            "Media_spettri": 1.0
+        }
 
         self._build_ui()
         self._poll_queues()
@@ -170,18 +135,85 @@ class App(tk.Tk):
         self.canvas.get_tk_widget().configure(bg=COLOR_BG, highlightthickness=0)
         self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True, padx=15, pady=(0, 15))
 
+        ttk.Label(second_frame, text='Attiva acquisizione IBIL:').pack(side=tk.LEFT, padx=(25, 0))
 
+        self.enable_var = tk.BooleanVar(value=False)
+
+        self.enable_check = tk.Checkbutton(
+            second_frame,
+            text='X',
+            variable=self.enable_var,
+            bg=COLOR_BG,
+            fg=COLOR_TEXT,
+            selectcolor=COLOR_PANEL
+        )
+        self.enable_check.pack(side=tk.LEFT, padx=12)
+        
+        # --- Pulsante CONFIG IBIL ---
+        self.ibil_A = tk.StringVar(value="100")
+        self.ibil_B = tk.StringVar(value="1")
+
+        self.config_ibil_btn = tk.Button(
+            second_frame,
+            text="CONFIG IBIL",
+            command=self.open_config_ibil,
+            bg=COLOR_PANEL,
+            fg=COLOR_TEXT
+        )
+        self.config_ibil_btn.pack(side=tk.LEFT, padx=12)
+
+    def open_config_ibil(self):
+        win = tk.Toplevel(self)
+        win.title("Configurazione IBIL")
+        win.configure(bg=COLOR_BG)
+        win.resizable(False, False)
+
+        # Se vuoi che sia modale rispetto alla finestra principale:
+        win.transient(self)
+        win.grab_set()
+
+        fields = [("Tempo_integrazione_[ms]", self.ibil_A), ("Media_spettri", self.ibil_B)]
+
+        for i, (label_text, var) in enumerate(fields):
+            ttk.Label(win, text=f"{label_text}:", background=COLOR_BG, foreground=COLOR_TEXT).grid(
+                row=i, column=0, padx=10, pady=8, sticky="e"
+            )
+            entry = tk.Entry(win, textvariable=var, width=12)
+            entry.grid(row=i, column=1, padx=10, pady=8)
+
+        def salva():
+            try:
+                a = float(self.ibil_A.get())
+                b = float(self.ibil_B.get())
+            except ValueError:
+                tk.messagebox.showerror("Errore", "Inserisci valori numerici validi per A, B")
+                return
+
+            # qui puoi salvare i valori dove ti servono, es:
+            self.ibil_params = {"Tempo_integrazione_[ms]": a, "Media_spettri": b}
+            print("Parametri IBIL aggiornati:", self.ibil_params)
+
+            win.destroy()
+
+        save_btn = tk.Button(win, text="Salva", command=salva, bg=COLOR_PANEL, fg=COLOR_TEXT)
+        save_btn.grid(row=len(fields), column=0, columnspan=2, pady=(10, 12))
 
     def _start_acquisition(self):
-        
         sample_name = self.sample_var.get().strip()
         current_val = self.beam_current_var.get().strip()
-        
+
         if not os.path.exists("Data"):
             os.makedirs("Data")
-        
-        filename = "Data/{}_{}.csv".format(sample_name,current_val)
-        
+        timestamp_file = datetime.now().strftime('%Y%m%d_%H%M%S')
+        filename_part = "{}_{}_{}".format(timestamp_file, sample_name, current_val)
+
+        if self.enable_var.get():
+            send_true(self.socket, filename_part, self.ibil_params["Tempo_integrazione_[ms]"],self.ibil_params["Media_spettri"])
+            if not os.path.exists("Data/IBIL_{}".format(filename_part)):
+                os.makedirs("Data/IBIL_{}".format(filename_part))
+
+        filename = "Data/Powermeter_{}.csv".format(filename_part)
+
         if not filename:
             messagebox.showerror('Errore', 'Specifica un nome di file CSV.')
             return
@@ -211,6 +243,8 @@ class App(tk.Tk):
         self.status_var.set(f'Acquisizione in corso -> {filename}')
 
     def _stop_acquisition(self):
+        send_false(self.socket)
+
         self.stop_event.set()
         if self.acq_thread is not None:
             self.acq_thread.join(timeout=3)
@@ -255,9 +289,3 @@ class App(tk.Tk):
         if self.csv_file is not None:
             self.csv_file.close()
         self.destroy()
-
-
-if __name__ == '__main__':
-    app = App()
-    app.protocol('WM_DELETE_WINDOW', app.on_close)
-    app.mainloop()
