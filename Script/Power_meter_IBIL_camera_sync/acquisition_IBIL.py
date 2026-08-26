@@ -52,6 +52,8 @@ fig = None
 ax_spec = None
 ax_peak = None
 
+filename_part = "fip.png"
+
 times = []
 peaks = []
 t0 = time.time()
@@ -173,7 +175,9 @@ except KeyboardInterrupt:
 
 finally:
     if fig is not None:
+        plt.savefig("Data/IBIL_{}/FIG_IBIL.png".format(filename_part),dpi=480)
         plt.close(fig)
+        
 
     socket.close()
     context.term()

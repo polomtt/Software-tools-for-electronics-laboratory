@@ -225,7 +225,7 @@ class App(tk.Tk):
             return
 
         self.csv_writer = csv.writer(self.csv_file)
-        self.csv_writer.writerow(['timestamp', 'tempo_s', 'corrente'])
+        self.csv_writer.writerow(['timestamp', 'tempo[]', 'corrente[A]'])
 
         self.times = []
         self.values = []

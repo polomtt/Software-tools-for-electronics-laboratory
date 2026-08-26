@@ -1,0 +1,40 @@
+{
+  "modules": [
+    {
+      "name": "DT5780_A",
+      "model": "DT5780",
+      "connection": {
+        "link_type": "USB",
+        "link_num": 0,
+        "conet_node": 0,
+        "vme_base": "0"
+      },
+      "n_channels": 2,
+      "channels": [
+        { "channel": 0, "vset": 800.0, "ramp_up": 50.0, "ramp_down": 50.0 },
+        { "channel": 1, "vset": 1000.0, "ramp_up": 50.0, "ramp_down": 50.0 }
+      ]
+    },
+    {
+      "name": "V6533_A",
+      "model": "V65XX",
+      "driver": "hvwrapper",
+      "connection": {
+        "link_type": "USB",
+        "link_num": 0,
+        "conet_node": 0,
+        "vme_base": "12345678"
+      },
+      "n_channels": 6,
+      "channels": [
+        { "channel": 0, "vset": 500.0, "ramp_up": 25.0, "ramp_down": 25.0 },
+        { "channel": 1, "vset": 500.0, "ramp_up": 25.0, "ramp_down": 25.0 },
+        { "channel": 2, "vset": 500.0, "ramp_up": 25.0, "ramp_down": 25.0 },
+        { "channel": 3, "vset": 500.0, "ramp_up": 25.0, "ramp_down": 25.0 },
+        { "channel": 4, "vset": 500.0, "ramp_up": 25.0, "ramp_down": 25.0 },
+        { "channel": 5, "vset": 500.0, "ramp_up": 25.0, "ramp_down": 25.0 }
+      ]
+    }
+  ]
+}
+
