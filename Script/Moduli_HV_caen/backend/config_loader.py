@@ -59,6 +59,19 @@ class ChannelConfig:
     vset: float
     ramp_up: float
     ramp_down: float
+    # Opzionale: "+" o "-". Sul DT5780 (CAENDPP) e' l'unico modo di
+    # mostrarla, perche' la libreria non la espone come parametro
+    # leggibile. Sui moduli hvwrapper (es. V6533), se presente qui ha la
+    # precedenza sulla lettura automatica dall'hardware.
+    polarity: str | None = None
+    # Opzionale: limite di corrente (µA). Se assente, non viene toccato
+    # alla connessione/apply-config: resta quello gia' impostato sulla board.
+    iset: float | None = None
+    # Opzionale: tensione massima del canale (V), usata per scalare la
+    # barra di avanzamento nella UI (0 -> vmax). Entrambi i driver la
+    # leggono dall'hardware in automatico; se la scrivi qui ha la
+    # precedenza sulla lettura automatica.
+    vmax: float | None = None
 
 
 @dataclass
@@ -142,8 +155,29 @@ def _load_channels(raw: dict, n_channels: int, path: str) -> list[ChannelConfig]
         if ramp_down <= 0:
             raise ConfigError(f"{ch_path}.ramp_down deve essere > 0.")
 
+        polarity = ch_raw.get("polarity")
+        if polarity is not None:
+            polarity = str(polarity).strip()
+            if polarity not in ("+", "-"):
+                raise ConfigError(f"{ch_path}.polarity deve essere \"+\" o \"-\" (trovato {polarity!r}).")
+
+        iset = ch_raw.get("iset")
+        if iset is not None:
+            iset = float(iset)
+            if iset < 0:
+                raise ConfigError(f"{ch_path}.iset non può essere negativo.")
+
+        vmax = ch_raw.get("vmax")
+        if vmax is not None:
+            vmax = float(vmax)
+            if vmax <= 0:
+                raise ConfigError(f"{ch_path}.vmax deve essere > 0.")
+
         channels.append(
-            ChannelConfig(channel=ch_num, vset=vset, ramp_up=ramp_up, ramp_down=ramp_down)
+            ChannelConfig(
+                channel=ch_num, vset=vset, ramp_up=ramp_up, ramp_down=ramp_down,
+                polarity=polarity, iset=iset, vmax=vmax,
+            )
         )
 
     channels.sort(key=lambda c: c.channel)

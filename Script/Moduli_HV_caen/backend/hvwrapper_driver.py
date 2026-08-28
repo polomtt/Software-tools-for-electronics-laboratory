@@ -35,6 +35,8 @@ class ChannelState:
     vset: float = 0.0
     vmon: float = 0.0
     imon: float = 0.0
+    iset: float = 0.0
+    vmax: float = 0.0
 
     power_on: bool = False
 
@@ -56,6 +58,7 @@ _PARAM_ALIASES = {
     "vset": ("VSet", "V0Set", "Vset"),
     "vmon": ("VMon", "Vmon"),
     "imon": ("IMon", "IMonH", "IMonL", "Imon"),
+    "iset": ("ISet", "I0Set", "Iset"),
     "power": ("Pw", "POn", "Pw1"),
     "ramp_up": ("RUp", "RampUp"),
     "ramp_down": ("RDwn", "RDWN", "RampDown"),
@@ -93,6 +96,8 @@ class HVWrapperModuleDriver:
                 vset=c.vset,
                 ramp_up=c.ramp_up,
                 ramp_down=c.ramp_down,
+                polarity=c.polarity,
+                vmax=c.vmax if c.vmax is not None else 0.0,
             )
             for c in config.channels
         }
@@ -121,6 +126,8 @@ class HVWrapperModuleDriver:
                 vset=c.vset,
                 ramp_up=c.ramp_up,
                 ramp_down=c.ramp_down,
+                polarity=c.polarity,
+                vmax=c.vmax if c.vmax is not None else 0.0,
             )
             for c in config.channels
         }
@@ -130,6 +137,8 @@ class HVWrapperModuleDriver:
         for ch_cfg in self.config.channels:
             self.set_vset(ch_cfg.channel, ch_cfg.vset)
             self.set_ramp(ch_cfg.channel, ch_cfg.ramp_up, ch_cfg.ramp_down)
+            if ch_cfg.iset is not None and "iset" in self._param_names:
+                self.set_iset(ch_cfg.channel, ch_cfg.iset)
 
     # =======================================================================
     # CONNESSIONE
@@ -178,6 +187,7 @@ class HVWrapperModuleDriver:
 
                 self._param_names = self._resolve_param_names(device, slot, 0)
                 self._resolve_polarities(device, slot)
+                self._resolve_vmax(device, slot)
 
                 self._link_info = {
                     "link_type": link_type.name,
@@ -270,11 +280,28 @@ class HVWrapperModuleDriver:
         e la UI semplicemente non la mostra per quel canale.
         """
         if "polarity" not in self._param_names:
+            # Nessuno degli alias previsti esiste su questa board: stampiamo
+            # nel log del server l'elenco reale dei parametri esposti dal
+            # canale 0, cosi' e' immediato capire quale nome usare al posto
+            # di Pol/POL/Polarity in _PARAM_ALIASES.
+            try:
+                available = sorted(device.get_ch_param_info(slot, 0))
+                print(
+                    f"[hvwrapper] Modulo '{self.name}': nessun parametro polarita' "
+                    f"trovato tra gli alias previsti. Parametri disponibili sul "
+                    f"canale 0: {available}"
+                )
+            except Exception:
+                pass
             return
 
         param_name = self._param_names["polarity"]
 
         for channel in self._channels:
+            if self._channels[channel].polarity is not None:
+                # Valore gia' impostato esplicitamente in config.json:
+                # ha la precedenza, non serve leggerlo dall'hardware.
+                continue
             try:
                 prop = device.get_ch_param_prop(slot, channel, param_name)
                 raw = device.get_ch_param(slot, [channel], param_name)[0]
@@ -297,10 +324,45 @@ class HVWrapperModuleDriver:
                 with self._lock:
                     self._channels[channel].polarity = label
 
-            except Exception:
+            except Exception as exc:
+                print(
+                    f"[hvwrapper] Modulo '{self.name}': errore leggendo la "
+                    f"polarita' del canale {channel} (param '{param_name}'): {exc}"
+                )
                 # Non tutte le board/firmware espongono questo parametro in
                 # lettura in questo modo: lasciamo semplicemente None.
                 pass
+
+    def _resolve_vmax(self, device, slot: int):
+        """
+        Legge Vmax per ogni canale, se non gia' fissato esplicitamente da
+        config.json. Sulle board hvwrapper non c'e' un parametro "VMax"
+        separato: il limite massimo settabile e' esposto come proprieta'
+        (maxval) del parametro VSet stesso, letta via get_ch_param_prop().
+        Statica, quindi la leggiamo una sola volta qui.
+        """
+        vset_param = self._param_names.get("vset")
+        if not vset_param:
+            return
+
+        for channel in self._channels:
+            try:
+                ch_cfg_override = self.config.channel(channel).vmax
+            except Exception:
+                ch_cfg_override = None
+            if ch_cfg_override is not None:
+                continue  # gia' impostato da config in __init__/update_config
+
+            try:
+                prop = device.get_ch_param_prop(slot, channel, vset_param)
+                if prop.maxval is not None:
+                    with self._lock:
+                        self._channels[channel].vmax = float(prop.maxval)
+            except Exception as exc:
+                print(
+                    f"[hvwrapper] Modulo '{self.name}': errore leggendo Vmax "
+                    f"del canale {channel}: {exc}"
+                )
 
     def _param(self, key: str) -> str:
         try:
@@ -334,6 +396,35 @@ class HVWrapperModuleDriver:
 
         with self._lock:
             self._channels[channel].vset = voltage
+        self._try_refresh(channel)
+
+    def set_iset(self, channel: int, current: float):
+        """Imposta ISet (limite di corrente, uA), se la board espone quel parametro."""
+        self._check_connected()
+        self._check_channel(channel)
+
+        current = float(current)
+        if current < 0:
+            raise ValueError("Il limite di corrente non puo' essere negativo.")
+
+        if "iset" not in self._param_names:
+            raise ConnectionError_(
+                f"Modulo '{self.name}': questa board non espone un parametro ISet "
+                f"tra quelli trovati ({sorted(self._param_names.values())})."
+            )
+
+        device = self._require_device()
+        slot = self._require_slot()
+
+        try:
+            device.set_ch_param(slot, [channel], self._param("iset"), current)
+        except Exception as exc:
+            raise ConnectionError_(
+                f"Modulo '{self.name}': errore impostando ISet del canale {channel}: {exc}"
+            ) from exc
+
+        with self._lock:
+            self._channels[channel].iset = current
         self._try_refresh(channel)
 
     def set_power(self, channel: int, on: bool):
@@ -400,6 +491,8 @@ class HVWrapperModuleDriver:
             return {
                 "channel": channel,
                 "vset": s.vset,
+                "iset": s.iset,
+                "vmax": s.vmax,
                 "vmon": round(s.vmon, 2),
                 "imon": round(s.imon, 3),
                 "power_on": s.power_on,
@@ -484,6 +577,10 @@ class HVWrapperModuleDriver:
             if "imon" in self._param_names:
                 imon = float(device.get_ch_param(slot, [channel], self._param("imon"))[0])
 
+            iset = None
+            if "iset" in self._param_names:
+                iset = float(device.get_ch_param(slot, [channel], self._param("iset"))[0])
+
             power_raw = device.get_ch_param(slot, [channel], self._param("power"))[0]
             power_on = bool(power_raw)
 
@@ -503,6 +600,8 @@ class HVWrapperModuleDriver:
                 s = self._channels[channel]
                 s.vmon = vmon
                 s.imon = imon
+                if iset is not None:
+                    s.iset = iset
                 s.power_on = power_on
                 if ramp_up is not None:
                     s.ramp_up = ramp_up
@@ -551,6 +650,8 @@ class HVWrapperModuleDriver:
             "channels": {
                 ch: {
                     "vset": s.vset,
+                    "iset": s.iset,
+                    "vmax": s.vmax,
                     "vmon": round(s.vmon, 2),
                     "imon": round(s.imon, 3),
                     "power_on": s.power_on,

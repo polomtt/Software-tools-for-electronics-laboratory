@@ -28,6 +28,8 @@ class ChannelState:
     vset: float = 0.0
     vmon: float = 0.0
     imon: float = 0.0
+    iset: float = 0.0
+    vmax: float = 0.0
 
     power_on: bool = False
 
@@ -41,6 +43,10 @@ class ChannelState:
     # solo diagnostico, per capire dalla UI cosa non va senza congelare
     # tutto il resto.
     last_error: str | None = None
+
+    # Da config.json: CAENDPP non espone la polarita' come parametro
+    # leggibile, quindi qui arriva solo se scritta a mano nel canale.
+    polarity: str | None = None
 
 
 class ModuleDriver:
@@ -64,6 +70,8 @@ class ModuleDriver:
                 vset=c.vset,
                 ramp_up=c.ramp_up,
                 ramp_down=c.ramp_down,
+                polarity=c.polarity,
+                vmax=c.vmax if c.vmax is not None else 0.0,
             )
             for c in config.channels
         }
@@ -94,6 +102,8 @@ class ModuleDriver:
                 vset=c.vset,
                 ramp_up=c.ramp_up,
                 ramp_down=c.ramp_down,
+                polarity=c.polarity,
+                vmax=c.vmax if c.vmax is not None else 0.0,
             )
             for c in config.channels
         }
@@ -102,12 +112,15 @@ class ModuleDriver:
         """
         Spinge su hardware VSet/RampUp/RampDown letti dalla config per
         tutti i canali di questo modulo. Non tocca il power (resta
-        un'azione esplicita dell'utente, per sicurezza).
+        un'azione esplicita dell'utente, per sicurezza). ISet viene
+        applicato solo se presente nel canale (opzionale).
         """
         self._check_connected()
         for ch_cfg in self.config.channels:
             self.set_vset(ch_cfg.channel, ch_cfg.vset)
             self.set_ramp(ch_cfg.channel, ch_cfg.ramp_up, ch_cfg.ramp_down)
+            if ch_cfg.iset is not None:
+                self.set_iset(ch_cfg.channel, ch_cfg.iset)
 
     # =======================================================================
     # CONNESSIONE
@@ -251,6 +264,32 @@ class ModuleDriver:
                 f"Modulo '{self.name}': errore impostando VSet del canale {channel}: {exc}"
             ) from exc
 
+    def set_iset(self, channel: int, current: float):
+        """Imposta ISet (limite di corrente, uA). Stesso pattern di set_vset:
+        ISet fa parte di HVChannelConfig, quindi si legge/modifica/riscrive."""
+        self._check_connected()
+        self._check_channel(channel)
+
+        current = float(current)
+        if current < 0:
+            raise ValueError("Il limite di corrente non puo' essere negativo.")
+
+        device = self._require_device()
+        board_id = self._require_board_id()
+
+        try:
+            config = device.get_hv_channel_configuration(board_id, channel)
+            config.i_set = current
+            device.set_hv_channel_configuration(board_id, channel, config)
+            self._try_refresh(channel)
+
+        except ValueError:
+            raise
+        except Exception as exc:
+            raise ConnectionError_(
+                f"Modulo '{self.name}': errore impostando ISet del canale {channel}: {exc}"
+            ) from exc
+
     def set_power(self, channel: int, on: bool):
         self._check_connected()
         self._check_channel(channel)
@@ -320,6 +359,8 @@ class ModuleDriver:
             return {
                 "channel": channel,
                 "vset": s.vset,
+                "iset": s.iset,
+                "vmax": s.vmax,
                 "vmon": round(s.vmon, 2),
                 "imon": round(s.imon, 3),
                 "power_on": s.power_on,
@@ -327,7 +368,7 @@ class ModuleDriver:
                 "ramp_up": s.ramp_up,
                 "ramp_down": s.ramp_down,
                 "last_error": s.last_error,
-                "polarity": None,  # non applicabile alle schede DPP (HV integrata)
+                "polarity": s.polarity,  # da config.json (CAENDPP non la espone via API)
             }
 
     def get_hv_configuration(self, channel: int) -> dict:
@@ -446,6 +487,7 @@ class ModuleDriver:
             with self._lock:
                 s = self._channels[channel]
                 s.vset = float(config.v_set)
+                s.iset = float(config.i_set)
                 s.ramp_up = float(config.ramp_up)
                 s.ramp_down = float(config.ramp_down)
                 s.power_on = bool(power_on)
@@ -453,6 +495,17 @@ class ModuleDriver:
                 s.imon = float(monitoring.i_mon)
                 s.status = self._normalize_status(status_string, s.power_on, s.vset, s.vmon)
                 s.last_error = None  # lettura riuscita: cancella eventuale errore precedente
+
+                # Vmax: se config.json ne fissa uno esplicito per questo
+                # canale, ha la precedenza (gia' impostato in __init__/
+                # update_config); altrimenti usiamo quello letto ora
+                # dall'hardware.
+                try:
+                    ch_cfg_override = self.config.channel(channel).vmax
+                except Exception:
+                    ch_cfg_override = None
+                if ch_cfg_override is None:
+                    s.vmax = float(config.v_max)
 
         except Exception as exc:
             raise ConnectionError_(
@@ -491,6 +544,8 @@ class ModuleDriver:
             "channels": {
                 ch: {
                     "vset": s.vset,
+                    "iset": s.iset,
+                    "vmax": s.vmax,
                     "vmon": round(s.vmon, 2),
                     "imon": round(s.imon, 3),
                     "power_on": s.power_on,
@@ -498,7 +553,7 @@ class ModuleDriver:
                     "ramp_up": s.ramp_up,
                     "ramp_down": s.ramp_down,
                     "last_error": s.last_error,
-                    "polarity": None,
+                    "polarity": s.polarity,
                 }
                 for ch, s in self._channels.items()
             },

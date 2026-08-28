@@ -47,6 +47,10 @@ class VSetRequest(BaseModel):
     voltage: float = Field(ge=0, le=8000, description="Tensione target in Volt")
 
 
+class ISetRequest(BaseModel):
+    current: float = Field(ge=0, le=10000, description="Limite di corrente target in uA")
+
+
 class PowerRequest(BaseModel):
     on: bool
 
@@ -150,6 +154,16 @@ def set_vset(name: str, channel: int, req: VSetRequest):
         _handle(e)
 
 
+@app.post("/api/modules/{name}/channels/{channel}/iset")
+def set_iset(name: str, channel: int, req: ISetRequest):
+    try:
+        driver = manager.get(name)
+        driver.set_iset(channel, req.current)
+        return {"ok": True}
+    except Exception as e:
+        _handle(e)
+
+
 @app.post("/api/modules/{name}/channels/{channel}/power")
 def set_power(name: str, channel: int, req: PowerRequest):
     try:
@@ -180,6 +194,9 @@ async def ws_monitor(websocket: WebSocket):
         while True:
             try:
                 await websocket.send_json({"ok": True, "modules": manager.all_status()})
+            except WebSocketDisconnect:
+                print("WebSocket client disconnected")
+                return
             except Exception as e:
                 await websocket.send_json({"ok": False, "error": str(e)})
             await asyncio.sleep(0.5)

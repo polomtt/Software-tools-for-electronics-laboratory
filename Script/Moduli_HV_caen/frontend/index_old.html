@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>⚡ CAEN HV Control</title>
+<title>CAEN HV Control</title>
 <style>
   :root{
     --bg: #14171a;
@@ -112,19 +112,8 @@
   .readout .val{font-family:var(--mono); font-size:20px; margin-top:2px;}
   .readout .val .unit{font-size:12px; color:var(--text-dim); margin-left:2px;}
 
-  .bar-track{height:5px; background:var(--panel); border-radius:3px; overflow:hidden; margin:2px 0 4px; border:1px solid var(--line);}
+  .bar-track{height:5px; background:var(--panel); border-radius:3px; overflow:hidden; margin:2px 0 14px; border:1px solid var(--line);}
   .bar-fill{height:100%; background:linear-gradient(90deg, var(--amber-dim), var(--amber)); width:0%; transition:width .25s;}
-  .bar-labels{display:flex; justify-content:space-between; font-family:var(--mono); font-size:9.5px; color:var(--text-dim); margin-bottom:10px;}
-
-  /* --- Mini-grafico Imon --- */
-  .chart-box{
-    background:var(--panel); border:1px solid var(--line); border-radius:8px;
-    padding:10px 12px; margin:12px 0;
-  }
-  .chart-head{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px;}
-  .chart-head .label{font-size:10px; color:var(--text-dim); text-transform:uppercase; letter-spacing:1px;}
-  .chart-head .chart-range{font-family:var(--mono); font-size:10px; color:var(--text-dim);}
-  .imon-chart{width:100%; height:60px; display:block;}
 
   /* --- Griglia unica per Vset / Iset / Ramp Up / Ramp Down: 2x2, celle
      garantite della stessa larghezza perche' e' una vera CSS grid, non
@@ -156,7 +145,7 @@
   }
   .setting-field .btn-blue{ width:100%; }
 
-  /* --- Bottone azzurro (azione "Set"/"Applica") --- */
+  /* --- Bottone azzurro (azione "Imposta"/"Applica") --- */
   button.btn-blue{
     background:var(--blue); color:#062033; border:1px solid transparent;
     font-weight:600; border-radius:6px; padding:8px 12px; font-size:12.5px;
@@ -205,14 +194,14 @@
 <div class="wrap">
 
   <header>
-    <h1>⚡ CAEN <span>HV Control</span></h1>
+    <h1>CAEN <span>HV Control</span></h1>
     <div class="sub">
       <span id="clock"></span>
-      <button id="btnReload">Reload config.json</button>
+      <button id="btnReload">Ricarica config.json</button>
     </div>
   </header>
 
-  <div id="modules"><div class="empty">Loading modules…</div></div>
+  <div id="modules"><div class="empty">Caricamento moduli…</div></div>
 
   <footer>
     Moduli, canali, VSet e rampe di default sono definiti in
@@ -237,53 +226,6 @@ const vsetInitialized = new Set();
 const isetInitialized = new Set();
 // canali per cui abbiamo gia' mostrato il badge di polarita' (statica, va mostrata una volta sola)
 const polarityShown = new Set();
-// storico Imon per il mini-grafico: id -> array di valori (max 50), campionato ogni 10s
-const imonHistory = new Map();
-const imonLastSampleTime = new Map();
-const IMON_SAMPLE_MS = 10000;
-const IMON_MAX_POINTS = 50;
-
-function renderImonChart(id, arr){
-  const svg = document.getElementById(`imon-chart-${id}`);
-  const rangeEl = document.getElementById(`chartrange-${id}`);
-  if (!svg) return;
-
-  if (arr.length < 2){
-    svg.innerHTML = "";
-    if (rangeEl) rangeEl.textContent = "";
-    return;
-  }
-
-  const w = 300, h = 60, pad = 4;
-  let min = Math.min(...arr);
-  let max = Math.max(...arr);
-  if (min === max){ min -= 1; max += 1; }
-
-  const xAt = i => pad + (i / (arr.length - 1)) * (w - pad * 2);
-  const yAt = v => h - pad - ((v - min) / (max - min)) * (h - pad * 2);
-
-  const points = arr.map((v, i) => `${xAt(i).toFixed(1)},${yAt(v).toFixed(1)}`).join(" ");
-  const lastX = xAt(arr.length - 1);
-  const lastY = yAt(arr[arr.length - 1]);
-  const gradId = `imongrad-${id}`;
-  const areaPoints = `${pad},${h - pad} ${points} ${lastX.toFixed(1)},${h - pad}`;
-
-  svg.innerHTML = `
-    <defs>
-      <linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="#33d6b0" stop-opacity="0.35"/>
-        <stop offset="100%" stop-color="#33d6b0" stop-opacity="0"/>
-      </linearGradient>
-    </defs>
-    <polygon points="${areaPoints}" fill="url(#${gradId})" stroke="none"/>
-    <polyline points="${points}" fill="none" stroke="#33d6b0" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>
-    <circle cx="${lastX.toFixed(1)}" cy="${lastY.toFixed(1)}" r="2.6" fill="#33d6b0"/>
-  `;
-
-  if (rangeEl){
-    rangeEl.textContent = `${min.toFixed(2)} – ${max.toFixed(2)} µA`;
-  }
-}
 
 async function fetchJSON(url, opts){
   const res = await fetch(url, opts);
@@ -302,7 +244,7 @@ async function postJSON(url, body){
       body: JSON.stringify(body || {})
     });
   }catch(e){
-    alert("Error: " + e.message);
+    alert("Errore: " + e.message);
     throw e;
   }
 }
@@ -317,14 +259,14 @@ function moduleTemplate(mod){
         <span class="mmodel">${mod.model}</span>
       </div>
       <div class="actions">
-        <button class="primary" data-action="connect" data-module="${mod.name}">Connect</button>
-        <button class="ghost" data-action="disconnect" data-module="${mod.name}" disabled>Disconnect</button>
-        <button class="ghost" data-action="apply" data-module="${mod.name}" disabled>Apply config</button>
+        <button class="primary" data-action="connect" data-module="${mod.name}">Connetti</button>
+        <button class="ghost" data-action="disconnect" data-module="${mod.name}" disabled>Disconnetti</button>
+        <button class="ghost" data-action="apply" data-module="${mod.name}" disabled>Applica config</button>
       </div>
     </div>
     <div class="status-line">
       <div class="dot" id="dot-${mod.name}"></div>
-      <span id="conntext-${mod.name}">Not connected</span>
+      <span id="conntext-${mod.name}">Non connesso</span>
     </div>
     <div class="channels">${chanHTML}</div>
   </div>`;
@@ -335,17 +277,17 @@ function channelTemplate(moduleName, ch){
   return `
   <div class="chan" data-module="${moduleName}" data-ch="${ch}">
     <div class="chan-head">
-      <span class="name">CHANNEL ${ch}<span class="polarity" id="pol-${id}" style="display:none;"></span></span>
+      <span class="name">CH ${ch}<span class="polarity" id="pol-${id}" style="display:none;"></span></span>
       <div class="led-wrap">
         <span class="status-pill st-off" id="status-${id}">OFF</span>
         <div class="led" id="led-${id}"></div>
       </div>
     </div>
-    <!-- <div class="submodule">${moduleName} · canale ${ch}</div> -->
+    <div class="submodule">${moduleName} · canale ${ch}</div>
 
     <div class="tabs">
       <button class="tab-btn active" data-tab="monitor" data-id="${id}">Monitor</button>
-      <button class="tab-btn" data-tab="ramp" data-id="${id}">Settings</button>
+      <button class="tab-btn" data-tab="ramp" data-id="${id}">Settaggio</button>
     </div>
 
     <div class="tab-panel active" id="tab-monitor-${id}">
@@ -360,18 +302,6 @@ function channelTemplate(moduleName, ch){
         </div>
       </div>
       <div class="bar-track"><div class="bar-fill" id="bar-${id}"></div></div>
-      <div class="bar-labels">
-        <span>0</span>
-        <span id="barmax-${id}">— V</span>
-      </div>
-
-      <div class="chart-box">
-        <div class="chart-head">
-          <span class="label">Imon — ultimi 50 campioni (1 ogni 10s)</span>
-          <span class="chart-range" id="chartrange-${id}"></span>
-        </div>
-        <svg class="imon-chart" id="imon-chart-${id}" viewBox="0 0 300 60" preserveAspectRatio="none"></svg>
-      </div>
 
       <div class="power-row">
         <button class="btn-power btn-on" data-action="on" data-module="${moduleName}" data-ch="${ch}">ON</button>
@@ -389,7 +319,7 @@ function channelTemplate(moduleName, ch){
               <span class="unit">V</span>
             </div>
           </div>
-          <button class="btn-blue" data-action="setv" data-module="${moduleName}" data-ch="${ch}">Set</button>
+          <button class="btn-blue" data-action="setv" data-module="${moduleName}" data-ch="${ch}">Imposta</button>
         </div>
 
         <div class="setting-field">
@@ -400,7 +330,7 @@ function channelTemplate(moduleName, ch){
               <span class="unit">µA</span>
             </div>
           </div>
-          <button class="btn-blue" data-action="seti" data-module="${moduleName}" data-ch="${ch}">Set</button>
+          <button class="btn-blue" data-action="seti" data-module="${moduleName}" data-ch="${ch}">Imposta</button>
         </div>
 
         <div class="setting-field">
@@ -424,7 +354,7 @@ function channelTemplate(moduleName, ch){
         </div>
       </div>
 
-      <button class="btn-blue" data-action="setramp" data-module="${moduleName}" data-ch="${ch}" style="width:100%;">Apply ramp</button>
+      <button class="btn-blue" data-action="setramp" data-module="${moduleName}" data-ch="${ch}" style="width:100%;">Applica rampa</button>
     </div>
 
     <div class="last-error" id="err-${id}" style="display:none;"></div>
@@ -436,12 +366,12 @@ async function loadModules(){
   try{
     modulesMeta = await fetchJSON(`${API}/modules`);
   }catch(e){
-    modulesDiv.innerHTML = `<div class="empty">Unable to load modules: ${e.message}</div>`;
+    modulesDiv.innerHTML = `<div class="empty">Impossibile caricare i moduli: ${e.message}</div>`;
     return;
   }
 
   if (!modulesMeta.length){
-    modulesDiv.innerHTML = `<div class="empty">No modules defined in config.json</div>`;
+    modulesDiv.innerHTML = `<div class="empty">Nessun modulo definito in config.json</div>`;
     return;
   }
 
@@ -537,8 +467,6 @@ function clearInitFor(name){
     vsetInitialized.delete(id);
     isetInitialized.delete(id);
     polarityShown.delete(id);
-    imonHistory.delete(id);
-    imonLastSampleTime.delete(id);
   }
 }
 
@@ -549,7 +477,7 @@ function setConnectedUI(name, connected){
   mod.querySelector('[data-action="disconnect"]').disabled = !connected;
   mod.querySelector('[data-action="apply"]').disabled = !connected;
   document.getElementById(`dot-${name}`).className = "dot" + (connected ? " live" : "");
-  document.getElementById(`conntext-${name}`).textContent = connected ? "Connected" : "Not connected";
+  document.getElementById(`conntext-${name}`).textContent = connected ? "Connesso" : "Non connesso";
 }
 
 function statusPillClass(status){
@@ -590,27 +518,10 @@ function startMonitor(){
         pillEl.textContent = s.status;
         pillEl.className = "status-pill " + statusPillClass(s.status);
 
-        const vmax = (s.vmax && s.vmax > 0) ? s.vmax : 4000; // fallback finche' l'hardware non ha ancora risposto
-        const pct = Math.min(100, (s.vmon / vmax) * 100);
+        const pct = Math.min(100, (s.vmon / 4000) * 100);
         document.getElementById(`bar-${id}`).style.width = pct + "%";
-        const barmaxEl = document.getElementById(`barmax-${id}`);
-        if (barmaxEl) barmaxEl.textContent = `${vmax.toFixed(0)} V`;
 
         document.getElementById(`led-${id}`).className = ledClass(s.status, s.power_on);
-
-        // Campiona Imon per il mini-grafico: 1 punto ogni 10s, max 50 punti
-        {
-          const now = Date.now();
-          const lastSample = imonLastSampleTime.get(id) || 0;
-          if (now - lastSample >= IMON_SAMPLE_MS || !imonHistory.has(id)){
-            const arr = imonHistory.get(id) || [];
-            arr.push(s.imon);
-            if (arr.length > IMON_MAX_POINTS) arr.shift();
-            imonHistory.set(id, arr);
-            imonLastSampleTime.set(id, now);
-            renderImonChart(id, arr);
-          }
-        }
 
         // Evidenzia il pulsante ON/OFF corrispondente allo stato attuale
         const chanEl = document.querySelector(`.chan[data-module="${name}"][data-ch="${ch}"]`);
@@ -637,7 +548,7 @@ function startMonitor(){
 
         // Idem per Vset: lo precompiliamo col valore letto dall'hardware
         // la prima volta, poi lasciamo il campo libero (l'utente lo
-        // modifica e clicca "Set" quando vuole).
+        // modifica e clicca "Imposta" quando vuole).
         if (!vsetInitialized.has(id)){
           const vsetEl = document.getElementById(`vset-${id}`);
           if (vsetEl){
@@ -659,7 +570,7 @@ function startMonitor(){
         if (!polarityShown.has(id) && s.polarity){
           const polEl = document.getElementById(`pol-${id}`);
           if (polEl){
-            polEl.textContent = s.polarity === "+" ? "POSITIVE" : (s.polarity === "-" ? "NEGATIVE" : s.polarity);
+            polEl.textContent = s.polarity === "+" ? "+HV" : (s.polarity === "-" ? "−HV" : s.polarity);
             polEl.className = "polarity" + (s.polarity === "+" ? " pos" : (s.polarity === "-" ? " neg" : ""));
             polEl.style.display = "inline-block";
             polarityShown.add(id);

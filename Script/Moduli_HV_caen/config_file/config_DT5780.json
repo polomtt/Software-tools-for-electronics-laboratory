@@ -1,0 +1,20 @@
+{
+  "modules": [
+    {
+      "name": "DT5780_A",
+      "model": "DT5780",
+      "connection": {
+        "link_type": "USB",
+        "link_num": 1,
+        "conet_node": 0,
+        "vme_base": "0"
+      },
+      "n_channels": 2,
+      "channels": [
+        { "channel": 0, "vset": 1000.0, "ramp_up": 50.0, "ramp_down": 50.0, "polarity": "-", "iset": 5.0 },
+        { "channel": 1, "vset": 1000.0, "ramp_up": 50.0, "ramp_down": 50.0, "polarity": "+", "iset": 5.0 }
+      ]
+    }
+  ]
+}
+

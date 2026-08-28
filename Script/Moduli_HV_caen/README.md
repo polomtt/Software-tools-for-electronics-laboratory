@@ -13,6 +13,7 @@ Supporta due famiglie di moduli, con lo stesso frontend:
   tipicamente attraverso un bridge VME-USB come il **V1718**.
 
 ```
+caen-webapp/
 Moduli_HV_caen/
 ├── install.sh              Installa dipendenze di sistema + Python + verifica librerie CAEN
 ├── start.sh                Avvia il backend (funziona da qualunque cartella)
@@ -74,8 +75,8 @@ Un blocco per ogni modulo fisico collegato:
       },
       "n_channels": 2,
       "channels": [
-        { "channel": 0, "vset": 800.0,  "ramp_up": 50.0, "ramp_down": 50.0 },
-        { "channel": 1, "vset": 1000.0, "ramp_up": 50.0, "ramp_down": 50.0 }
+        { "channel": 0, "vset": 800.0,  "ramp_up": 50.0, "ramp_down": 50.0, "polarity": "+", "iset": 5.0 },
+        { "channel": 1, "vset": 1000.0, "ramp_up": 50.0, "ramp_down": 50.0, "polarity": "+", "iset": 5.0 }
       ]
     },
     {
@@ -108,9 +109,24 @@ Campi comuni a ogni modulo:
   VME impostato fisicamente sui dip-switch/rotary switch della board
   (es. `"12345678"`), e va cambiato se sposti il modulo su un'altra
   scheda con indirizzo diverso.
-- Per ogni canale: **`vset`** (V), **`ramp_up`**/**`ramp_down`** (V/s) —
-  applicati automaticamente alla connessione (il power resta comunque
-  OFF finché non lo accendi tu dalla UI, per sicurezza).
+
+Campi per ogni canale (solo `channel`/`vset`/`ramp_up`/`ramp_down` sono
+obbligatori, gli altri sono opzionali):
+- **`vset`** (V) — applicato automaticamente alla connessione.
+- **`ramp_up`** / **`ramp_down`** (V/s) — applicati automaticamente alla
+  connessione.
+- **`iset`** (µA, opzionale) — limite di corrente. Se presente, viene
+  applicato automaticamente alla connessione/"Applica config" come
+  vset/rampe; se assente, il driver **non tocca** il valore già
+  impostato sulla board.
+- **`polarity`** (opzionale, `"+"` o `"-"`) — su **DT5780** è l'unico modo
+  di mostrarla in UI, perché CAENDPPLib non la espone come parametro
+  leggibile: scrivila guardando l'etichetta vicino al connettore HV o il
+  datasheet del tuo modulo. Su **hvwrapper** (V6533), se la scrivi qui ha
+  la precedenza sulla lettura automatica dall'hardware.
+
+Il power (ON/OFF) non viene mai toccato automaticamente: resta sempre
+un'azione esplicita dalla UI, anche subito dopo la connessione.
 
 Puoi ricaricare `config.json` senza riavviare il backend con il pulsante
 "Ricarica config.json" nella UI, o via `POST /api/config/reload` (un
@@ -135,11 +151,23 @@ Ogni modulo di `config.json` ha il proprio pannello con **Connetti** /
 sotto-blocco per ogni canale (`CH 0`, `CH 1`, ...), organizzato in due
 tab:
 
-- **Monitor** — Vmon/Imon aggiornati via WebSocket ogni 0.5s, barra di
-  livello, campo Vset + pulsante "Imposta", pulsanti **ON** (verde) /
-  **OFF** (rosso) — quello corrispondente allo stato attuale del canale
-  resta evidenziato pieno.
-- **Rampa** — campi Ramp Up / Ramp Down (V/s) + pulsante "Applica rampa".
+- **Monitor**:
+  - Box **Vmon** / **Imon**, aggiornati via WebSocket ogni 0.5s, con
+    barra di livello sotto.
+  - Box **Vset** (stesso stile grande di Vmon, editabile) + pulsante
+    azzurro **Imposta**.
+  - Box **Iset** (limite di corrente, stesso stile) + pulsante azzurro
+    **Imposta**. Se la board (hvwrapper) non espone questo parametro,
+    scrivere qui dà un errore che elenca i parametri reali disponibili.
+  - Pulsanti **ON** (verde) / **OFF** (rosso) — quello corrispondente
+    allo stato attuale del canale resta evidenziato pieno.
+- **Rampa** — box **Ramp Up** / **Ramp Down** (V/s, stesso stile grande)
+  + pulsante azzurro **Applica rampa**.
+
+Tutti i campi editabili (Vset, Iset, Ramp Up, Ramp Down) si precompilano
+da soli col valore letto dall'hardware al primo aggiornamento dopo la
+connessione, e si ripopolano ad ogni riconnessione — dopodiché restano
+liberi, così non ti sovrascrive quello che stai digitando.
 
 Altri dettagli visivi:
 - **LED** accanto al nome canale: fisso rosso = canale acceso e stabile,
@@ -148,13 +176,15 @@ Altri dettagli visivi:
 - **Status pill** colorata sotto al LED (grigio=OFF, verde=ON, ambra
   pulsante=rampa, rosso=errore/sovracorrente) — più leggibile del solo
   testo.
-- **Badge polarità** (`+HV` / `−HV`) accanto al nome canale, solo per
-  moduli `hvwrapper` che espongono quel parametro in lettura (es. V6533)
-  — è statico, letto una volta alla connessione.
+- **Badge polarità** (`+HV` / `−HV`) accanto al nome canale, su
+  **entrambi** i tipi di modulo: su DT5780 arriva solo da `polarity` in
+  config.json, su hvwrapper viene letta dall'hardware (a meno che non la
+  fissi anche lì in config.json). È statica, mostrata una volta per
+  connessione.
 - Se la lettura del monitor di un canale fallisce, compare un **testo
   rosso** sotto al canale con il messaggio d'errore esatto, senza
-  bloccare gli altri canali/moduli né i comandi ON/OFF/VSet (che contano
-  come riusciti appena arrivano all'hardware, indipendentemente
+  bloccare gli altri canali/moduli né i comandi ON/OFF/VSet/ISet/rampa
+  (che contano come riusciti appena arrivano all'hardware, indipendentemente
   dall'esito della rilettura successiva).
 
 ## API principali
@@ -166,8 +196,9 @@ Altri dettagli visivi:
 | POST | `/api/config/reload` | Ricarica config.json |
 | POST | `/api/modules/{name}/connect` | Connette il modulo (applica config di default) |
 | POST | `/api/modules/{name}/disconnect` | Disconnette il modulo |
-| POST | `/api/modules/{name}/apply-config` | Riapplica VSet/rampe da config.json |
+| POST | `/api/modules/{name}/apply-config` | Riapplica VSet/ISet/rampe da config.json |
 | POST | `/api/modules/{name}/channels/{ch}/vset` | Imposta VSet |
+| POST | `/api/modules/{name}/channels/{ch}/iset` | Imposta ISet (limite di corrente) |
 | POST | `/api/modules/{name}/channels/{ch}/power` | ON/OFF |
 | POST | `/api/modules/{name}/channels/{ch}/ramp` | Imposta rampe |
 | WS | `/ws/monitor` | Stato live di tutti i moduli, push ogni 0.5s |
@@ -181,15 +212,23 @@ sanno (né devono sapere) con quale libreria sta parlando davvero.
 - **`module_driver.py`** (driver `dpp`) usa le chiamate `caen_libs.caendpplib`
   verificate contro `CAENDPPLib.h`/`_caendpplibtypes.py` di riferimento.
   Se la tua versione installata espone nomi/firme leggermente diversi,
-  allinea i punti in `_refresh_channel`, `set_vset`, `set_power`,
-  `set_ramp`, `connect`.
+  allinea i punti in `_refresh_channel`, `set_vset`, `set_iset`,
+  `set_power`, `set_ramp`, `connect`.
 - **`hvwrapper_driver.py`** (driver `hvwrapper`) **scopre a runtime** i
-  nomi dei parametri di canale (VSet, VMon, IMon, Pw, rampe, polarità)
-  invece di averli hardcoded, provando un elenco di alias comuni
-  (`_PARAM_ALIASES` in cima al file). Se alla connessione un modulo dà
-  errore tipo `non trovo i parametri [...] tra quelli esposti dalla
-  board (...)`, l'elenco tra parentesi mostra i nomi reali: aggiungili
-  agli alias giusti in `_PARAM_ALIASES`.
-- Il limite di tensione nel form (0–8000 V) è generoso apposta per coprire
-  varianti; se vuoi un tetto più stretto, aggiorna `Field(le=...)` in
-  `main.py` (classe `VSetRequest`).
+  nomi dei parametri di canale (VSet, VMon, IMon, ISet, Pw, rampe,
+  polarità) invece di averli hardcoded, provando un elenco di alias
+  comuni (`_PARAM_ALIASES` in cima al file). Se alla connessione un
+  modulo dà errore tipo `non trovo i parametri [...] tra quelli esposti
+  dalla board (...)`, l'elenco tra parentesi mostra i nomi reali:
+  aggiungili agli alias giusti in `_PARAM_ALIASES`. Lo stesso vale se
+  scrivi su `iset` e la board non lo trova: l'errore elenca i parametri
+  realmente disponibili.
+- Se sul tuo V6533 la polarità non compare, guarda il terminale di
+  uvicorn subito dopo la connessione: c'è una riga `[hvwrapper] Modulo
+  '...' : nessun parametro polarita' trovato...` con l'elenco reale dei
+  parametri — usalo per capire il nome giusto, oppure aggira il problema
+  scrivendo `"polarity"` a mano in config.json per quel modulo.
+- Il limite di tensione nel form (0–8000 V) e di corrente (0–10000 µA)
+  sono generosi apposta per coprire varianti; se vuoi un tetto più
+  stretto, aggiorna `Field(le=...)` in `main.py` (classi `VSetRequest` /
+  `ISetRequest`).
