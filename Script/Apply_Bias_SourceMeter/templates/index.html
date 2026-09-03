@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SMU Control — Curva IV / Bias</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<header class="nameplate">
+  <div class="nameplate-left">
+    <span id="conn-dot" class="led led--off led--cyan led--sm"></span>
+    <div class="nameplate-text">
+      <span class="nameplate-title">SMU Control</span>
+      <span class="nameplate-sub">Curva IV &amp; applicazione bias</span>
+    </div>
+  </div>
+  <div class="nameplate-right">
+    <span class="nameplate-label">stato</span>
+    <span id="state-text" class="nameplate-value">pronto</span>
+  </div>
+</header>
+
+<main class="layout">
+
+  <aside class="panel sidebar">
+    <span class="screw screw--tl"></span>
+    <span class="screw screw--tr"></span>
+
+    <nav class="tabs">
+      <button class="tab-btn active" data-tab="misura">Misura</button>
+      <button class="tab-btn" data-tab="impostazioni">Impostazioni</button>
+    </nav>
+
+    <section id="tab-misura" class="tab-content active">
+
+      <div class="section">
+        <span class="section-title">Modalità</span>
+        <select id="mode-select" class="select">
+          <option value="iv_curve">Curva IV — 0 → V_set → 0</option>
+          <option value="bias">Applico BIAS — 0 → V_set, mantieni</option>
+        </select>
+      </div>
+
+      <div class="section section--control">
+        <span class="section-title">Controllo</span>
+        <div class="power-control">
+          <button id="btn-power" class="btn-power btn-power--off" aria-label="Start/Stop">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v8"/><path d="M18.36 6.64a9 9 0 1 1-12.72 0"/></svg>
+          </button>
+          <span id="power-label" class="power-label is-off">off</span>
+        </div>
+      </div>
+
+      <div class="section">
+        <span class="section-title">File dati</span>
+        <span id="file-path" class="file-path">nessuna misura avviata</span>
+      </div>
+    </section>
+
+    <section id="tab-impostazioni" class="tab-content">
+      <form id="config-form">
+
+        <div class="section">
+          <span class="section-title">Campione &amp; strumento</span>
+          <label class="field-label" for="cfg-sample_name">Nome campione</label>
+          <input class="text-input" type="text" id="cfg-sample_name" name="sample_name">
+
+          <label class="field-label" for="cfg-instrument_resource">Indirizzo VISA</label>
+          <input class="text-input mono" type="text" id="cfg-instrument_resource" name="instrument_resource">
+        </div>
+
+        <div class="section">
+          <span class="section-title">Rampa di tensione</span>
+          <div class="field-grid">
+            <div>
+              <label class="field-label" for="cfg-v_set">V_set [V]</label>
+              <input class="text-input mono" type="number" step="any" id="cfg-v_set" name="v_set">
+            </div>
+            <div>
+              <label class="field-label" for="cfg-step_voltage">Step [V]</label>
+              <input class="text-input mono" type="number" step="any" min="0.001" id="cfg-step_voltage" name="step_voltage">
+            </div>
+            <div>
+              <label class="field-label" for="cfg-delay">Ritardo tra step [s]</label>
+              <input class="text-input mono" type="number" step="any" min="0" id="cfg-delay" name="delay">
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <span class="section-title">Limiti &amp; campionamento</span>
+          <div class="field-grid">
+            <div>
+              <label class="field-label" for="cfg-current_compliance">Compliance corrente [A]</label>
+              <input class="text-input mono" type="number" step="any" min="0" id="cfg-current_compliance" name="current_compliance">
+            </div>
+            <div>
+              <label class="field-label" for="cfg-hold_sample_period">Campionamento in BIAS [s]</label>
+              <input class="text-input mono" type="number" step="any" min="0.05" id="cfg-hold_sample_period" name="hold_sample_period">
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" id="btn-setta" class="btn-apply">
+          <svg width="13" height="13" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M10.5 6a4.5 4.5 0 1 1-1.05-2.9M10.5 1.5v3h-3"/></svg>
+          Applica parametri
+        </button>
+        <div id="config-msg" class="config-msg" hidden></div>
+      </form>
+    </section>
+  </aside>
+
+  <div class="main-col">
+
+    <div id="error-box" class="error-box" hidden></div>
+
+    <section class="panel display-panel">
+      <span class="screw screw--tl"></span>
+      <span class="screw screw--tr"></span>
+
+      <div class="screen">
+        <div class="screen-cell">
+          <span class="screen-label">tensione</span>
+          <span id="display-v" class="screen-value">— . — — —</span>
+          <span class="screen-unit">V</span>
+        </div>
+        <div class="screen-divider"></div>
+        <div class="screen-cell">
+          <span class="screen-label">corrente</span>
+          <span id="display-i" class="screen-value screen-value--current">—.———e—</span>
+          <span class="screen-unit">A</span>
+        </div>
+      </div>
+
+      <div class="status-strip">
+        <div class="status-metric">
+          <span class="status-metric-label">tempo</span>
+          <span id="read-t" class="status-metric-value">00:00:00</span>
+        </div>
+        <div class="status-metric">
+          <span class="status-metric-label">punti</span>
+          <span id="read-n" class="status-metric-value">0</span>
+        </div>
+        <div class="status-leds">
+          <div class="led-item">
+            <span id="led-output" class="led led--off led--green"></span>
+            <span class="led-item-label">uscita</span>
+          </div>
+          <div class="led-item">
+            <span id="led-bias" class="led led--off led--amber"></span>
+            <span class="led-item-label">bias</span>
+          </div>
+          <div class="led-item">
+            <span id="led-error" class="led led--off led--red"></span>
+            <span class="led-item-label">errore</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel chart-panel">
+      <div class="chart-header">
+        <span class="chart-title">Tempo vs corrente</span>
+        <span id="chart-mode-badge" class="badge">—</span>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="current-chart"></canvas>
+      </div>
+    </section>
+
+  </div>
+
+</main>
+
+<script src="{{ url_for('static', filename='chart.umd.min.js') }}"></script>
+<script src="{{ url_for('static', filename='main.js') }}"></script>
+</body>
+</html>
