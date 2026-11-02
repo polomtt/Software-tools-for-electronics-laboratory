@@ -153,8 +153,8 @@ try:
 
                     ax_peak.plot(times, peaks, "-o")
 
-                    ax_peak.set_xlabel("Tempo [s]")
-                    ax_peak.set_ylabel("Altezza picco")
+                    ax_peak.set_xlabel("Time [s]")
+                    ax_peak.set_ylabel("Peak hight")
                     ax_peak.grid(True)
 
                     # Aggiorna finestra

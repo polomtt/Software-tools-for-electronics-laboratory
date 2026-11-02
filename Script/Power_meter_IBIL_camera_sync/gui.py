@@ -93,8 +93,9 @@ class App(tk.Tk):
     def _build_ui(self):
         top_frame = ttk.Frame(self, padding=15)
         top_frame.pack(side=tk.TOP, fill=tk.X)
+        
 
-        ttk.Label(top_frame, text='Sample:').pack(side=tk.LEFT)
+        ttk.Label(top_frame, text='Sample:',font=("Arial", 14, "bold")).pack(side=tk.LEFT)
         self.sample_var = tk.StringVar(value='sample')
         self.sample_entry = ttk.Entry(top_frame, textvariable=self.sample_var, width=35)
         self.sample_entry.pack(side=tk.LEFT, padx=8)
@@ -109,7 +110,7 @@ class App(tk.Tk):
         second_frame = ttk.Frame(self, padding=(15, 0, 15, 15))
         second_frame.pack(side=tk.TOP, fill=tk.X)
 
-        ttk.Label(second_frame, text='beam_current:').pack(side=tk.LEFT)
+        ttk.Label(second_frame, text='Beam current:',font=("Arial", 14, "bold")).pack(side=tk.LEFT)
         self.beam_current_var = tk.StringVar(value='0')
         self.beam_current_entry = ttk.Entry(second_frame, textvariable=self.beam_current_var, width=35)
         self.beam_current_entry.pack(side=tk.LEFT, padx=8)
@@ -122,9 +123,9 @@ class App(tk.Tk):
         self.fig.patch.set_facecolor(COLOR_BG)
         self.ax = self.fig.add_subplot(111)
         self.ax.set_facecolor(COLOR_PANEL)
-        self.ax.set_xlabel('Tempo (s)', color=COLOR_TEXT)
-        self.ax.set_ylabel('Corrente', color=COLOR_TEXT)
-        self.ax.set_title('Corrente vs Tempo', color=COLOR_TEXT, fontsize=13, fontweight='bold')
+        self.ax.set_xlabel('Time [s]',fontsize=15, color=COLOR_TEXT)
+        self.ax.set_ylabel('Current [A]',fontsize=15, color=COLOR_TEXT)
+        self.ax.set_title('Current vs time', color=COLOR_TEXT, fontsize=15, fontweight='bold')
         self.ax.tick_params(colors=COLOR_TEXT)
         for spine in self.ax.spines.values():
             spine.set_color('#555566')
@@ -135,7 +136,7 @@ class App(tk.Tk):
         self.canvas.get_tk_widget().configure(bg=COLOR_BG, highlightthickness=0)
         self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True, padx=15, pady=(0, 15))
 
-        ttk.Label(second_frame, text='Attiva acquisizione IBIL:').pack(side=tk.LEFT, padx=(25, 0))
+        ttk.Label(second_frame, text='Attivate IBIL:',font=("Arial", 14, "bold")).pack(side=tk.LEFT, padx=(25, 0))
 
         self.enable_var = tk.BooleanVar(value=False)
 
@@ -164,7 +165,7 @@ class App(tk.Tk):
 
     def open_config_ibil(self):
         win = tk.Toplevel(self)
-        win.title("Configurazione IBIL")
+        win.title("IBIL configuration")
         win.configure(bg=COLOR_BG)
         win.resizable(False, False)
 
@@ -172,7 +173,7 @@ class App(tk.Tk):
         win.transient(self)
         win.grab_set()
 
-        fields = [("Tempo_integrazione_[ms]", self.ibil_A), ("Media_spettri", self.ibil_B)]
+        fields = [("Integration time [ms]", self.ibil_A), ("Number of spectra averaged", self.ibil_B)]
 
         for i, (label_text, var) in enumerate(fields):
             ttk.Label(win, text=f"{label_text}:", background=COLOR_BG, foreground=COLOR_TEXT).grid(
@@ -191,14 +192,17 @@ class App(tk.Tk):
 
             # qui puoi salvare i valori dove ti servono, es:
             self.ibil_params = {"Tempo_integrazione_[ms]": a, "Media_spettri": b}
-            print("Parametri IBIL aggiornati:", self.ibil_params)
+            print("IBIL parameters updated:", self.ibil_params)
 
             win.destroy()
 
-        save_btn = tk.Button(win, text="Salva", command=salva, bg=COLOR_PANEL, fg=COLOR_TEXT)
+        save_btn = tk.Button(win, text="Save", command=salva, bg=COLOR_PANEL, fg=COLOR_TEXT)
         save_btn.grid(row=len(fields), column=0, columnspan=2, pady=(10, 12))
 
     def _start_acquisition(self):
+        
+        
+        
         sample_name = self.sample_var.get().strip()
         current_val = self.beam_current_var.get().strip()
 
@@ -207,10 +211,14 @@ class App(tk.Tk):
         timestamp_file = datetime.now().strftime('%Y%m%d_%H%M%S')
         filename_part = "{}_{}_{}".format(timestamp_file, sample_name, current_val)
 
+        
+        
         if self.enable_var.get():
-            send_true(self.socket, filename_part, self.ibil_params["Tempo_integrazione_[ms]"],self.ibil_params["Media_spettri"])
+            send_true(self.socket, filename_part, self.ibil_params["Tempo_integrazione_[ms]"],self.ibil_params["Media_spettri"],True)
             if not os.path.exists("Data/IBIL_{}".format(filename_part)):
                 os.makedirs("Data/IBIL_{}".format(filename_part))
+        else:
+            send_true(self.socket, filename_part, 0,0,False)
 
         filename = "Data/Powermeter_{}.csv".format(filename_part)
 

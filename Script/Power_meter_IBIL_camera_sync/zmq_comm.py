@@ -25,18 +25,17 @@ def close_socket(context, socket):
     socket.close()
     context.term()
 
-def send_true(socket, filename, integration_time, avg_spectrum):
-    message = {"value": True, "filename": filename, "integration_time": integration_time, "avg_spectrum": avg_spectrum}
+def send_true(socket, filename, integration_time, avg_spectrum, activate_IBIL):
+    message = {"value": True, "filename": filename, "integration_time": integration_time, "avg_spectrum": avg_spectrum,"activate_IBIL":activate_IBIL}
     socket.send_string(json.dumps(message))
 
 def send_false(socket):
-    message = {"value": False, "filename": "", "integration_time": 100, "avg_spectrum": 1}
+    message = {"value": False, "filename": "", "integration_time": 100, "avg_spectrum": 1,"activate_IBIL":False}
     socket.send_string(json.dumps(message))
-
 
 
 def read_socket(socket):
     message = socket.recv_string()
     data = json.loads(message)
-    return data["value"], data["filename"], data["integration_time"], data["avg_spectrum"]
+    return data["value"], data["filename"], data["integration_time"], data["avg_spectrum"], data["activate_IBIL"]
 
