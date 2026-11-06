@@ -91,36 +91,29 @@ def ramp(my_instr, v_start, v_end, step=0.5, delay=0.3):
 #|_|   \__,_|_|  \__,_|_| |_| |_|\___|\__\___|_|  |___/
 
 ##in Volts
-#step_voltage = 0.01
-#V_set = 0.5
-#sample_name = "GelMA-05PEDOT_2"
 
-#double_polarity = True
-## Bias sequence definition:
-## - single polarity:False→ +Vset → 0
-## - double_polarity:True =>  0 → +Vset → -Vset → 0
-## (used for I-V characterization under forward/reverse bias)
+step_voltage = 0.05
+V_set = 0.5
 
-#current_compliance = 100e-6 # in Ampere
-#delay_new_step = 0 #in secondi
-
-#For COBRA
-
-step_voltage = 0.5
-V_set = -80
-sample_name = "Meas_Current_COBRA_IV_sensor_su_Kapton_Bias_BACK_sp3_AFTER_Ba133"
-
-double_polarity = False
+double_polarity = True
 # Bias sequence definition:
-# - single polarity:False→ +Vset → 0
-# - double_polarity:True =>  0 → +Vset → -Vset → 0
+# - single polarity:False => 0 →    Vset → 0
+# - double_polarity:True  => 0 → +Vset → -Vset → 0
 # (used for I-V characterization under forward/reverse bias)
 
-current_compliance = 600e-6 # in Ampere
-delay_new_step = 1.0 #in secondi
+current_compliance = 1e-3 # in Ampere
+delay_new_step = 0.5 #in secondi
+
+sample_name = "GelMA-2PEDOT_2_squezed_covered"
+
+
+##############################################################################################
+#### STOP
+##############################################################################################
+
 
 #instrument_resource_string = "TCPIP::10.196.31.120::inst0::INSTR"
-instrument_resource_string = "TCPIP::10.196.31.238::inst0::INSTR"
+instrument_resource_string = "TCPIP::10.196.31.73::inst0::INSTR"
 
 
 #================================================================================
@@ -160,6 +153,8 @@ instrument_write(my_instr, ":SOUR:FUNC VOLT")
 instrument_write(my_instr, ":SOUR:VOLT 0")
 instrument_write(my_instr, ":SOURce:VOLT:ILIM {}".format(current_compliance))
 
+instrument_write(my_instr, ":SENS:CURR:RANG 10e-3")
+
 instrument_write(my_instr, ":TRIG:BLOC:BUFF:CLE 1")
 instrument_write(my_instr, ":TRIG:BLOC:MEAS 1")
 
@@ -192,8 +187,9 @@ plt.grid(True)
 plt.xlabel("Voltage [V]",fontsize=fontsize_to_use)
 plt.ylabel("Current [A]",fontsize=fontsize_to_use)
 plt.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
-plt.tight_layout()
 plt.title("{}_{}".format(filename_out,filename_time),fontsize=fontsize_to_use)
+plt.tight_layout()
+
 plt.savefig("{}_{}.png".format(filename_out,filename_time))
 plt.show()
 

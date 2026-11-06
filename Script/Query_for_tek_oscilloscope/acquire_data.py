@@ -1,92 +1,155 @@
-# import visa
 import pyvisa as visa
 import time
 import datetime
-import matplotlib.pyplot as plt
-import numpy as np
+import os
 
 echo_commands = 0
 
 
-def instrument_connect(resource_mgr, instrument_object, instrument_resource_string, timeout, do_id_query, do_reset, do_clear): 
-    instrument_object = resource_mgr.open_resource(instrument_resource_string)
-    if do_id_query == 1:
-        print(instrument_query(instrument_object, "*IDN?"))
-    if do_reset == 1:
-        instrument_write(instrument_object, "*RST")
-    if do_clear == 1:
-        instrument_object.clear()
+def instrument_connect(resource_mgr, instrument_resource_string,
+                       timeout, do_id_query, do_reset, do_clear):
+
+    instrument_object = resource_mgr.open_resource(
+        instrument_resource_string
+    )
+
     instrument_object.timeout = timeout
+
+    if do_id_query:
+        print(instrument_query(instrument_object, "*IDN?"))
+
+    if do_reset:
+        instrument_write(instrument_object, "*RST")
+
+    if do_clear:
+        instrument_object.clear()
+
     return resource_mgr, instrument_object
 
-def instrument_write(instrument_object, my_command):
-    if echo_commands == 1:
-        print(my_command)
-    instrument_object.write(my_command)
-    return
 
-def instrument_read(instrument_object):
-    return instrument_object.read()
+def instrument_write(instrument_object, my_command):
+    if echo_commands:
+        print(my_command)
+
+    instrument_object.write(my_command)
+
 
 def instrument_query(instrument_object, my_command):
-    if echo_commands == 1:
+    if echo_commands:
         print(my_command)
+
     return instrument_object.query(my_command)
+
 
 def instrument_disconnect(instrument_object):
     instrument_object.close()
-    return
 
 
-#================================================================================
-#
-#    MAIN CODE STARTS HERE
-#
-#================================================================================
+# ============================================================
+# MAIN CODE
+# ============================================================
 
-time_set_filename = datetime.datetime.now()
-filename_time = time_set_filename.strftime("%Y%m%d_%H%M%S")
+filename = "cobra"
 
-filename = "sr90_aidanova_dsh"
-instrument_resource_string = "TCPIP0::10.196.31.122::inst0::INSTR"
-quantity_to_measure = "AMPlitude"
-acq_time = 600 #in seconds
+instrument_resource_string = "TCPIP0::10.196.31.73::inst0::INSTR"
 
+quantity_to_measure = "CURRent"
 
+acq_time = 600000  # seconds
 
-f = open("Data/{}_{}.txt".format(filename,filename_time), "w")
-f.write("id,value\n")
+# Sampling interval (seconds)
+sampling_interval = 10
 
-time_start_programme = time.time()                    # Start the timer...
+# Create output directory
+os.makedirs("Data", exist_ok=True)
 
-resource_manager = visa.ResourceManager()	# Opens the resource manager
-my_instr = None 
-resource_manager, my_instr = instrument_connect(resource_manager, my_instr, instrument_resource_string,20000,1,0,0)
+# Generate filename
+filename_time = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
 
-instrument_write(my_instr, "MEASUREMENT:IMMED:TYPE {}".format(quantity_to_measure))
-count =0
+filepath = "Data/{}_{}.txt".format(filename, filename_time)
+
+# Start timer
+time_start_programme = time.time()
+
+resource_manager = visa.ResourceManager()
+my_instr = None
+count = 0
 
 try:
-    while True and (time.time()-time_start_programme)<acq_time:
-        
-        # instrument_write(my_instr, "INITiate")   # arma lo strumento
-        # # # instrument_write(my_instr, "TRG")   # arma lo strumento
-        instrument_query(my_instr, "*WAI")      # aspetta il trigger
-        # # help_trg = instrument_query(my_instr, "TRIGger:STATE?")
-        
-        voltage = float(instrument_query(my_instr,':MEASUrement:IMMed:VALue?'))
-        if (count%100)==0:
-            print("Num event save: {} -- Elapsed time: {:.2f}".format(count,time.time()-time_start_programme))
-        
-        print("{} {}".format(voltage))
-        
-        f.write("{},{}\n".format(count,voltage))
-        count=count+1
-except KeyboardInterrupt:
-    print("Finish :)")
-    pass
 
-f.close()
-instrument_disconnect(my_instr)
-resource_manager.close
+    # Connect to instrument
+    resource_manager, my_instr = instrument_connect(
+        resource_manager,
+        instrument_resource_string,
+        20000,
+        1,
+        0,
+        0
+    )
+
+    # Configure measurement
+    instrument_write(
+        my_instr,
+        "MEASUREMENT:IMMED:TYPE {}".format(quantity_to_measure)
+    )
+
+    print("\nStarting current acquisition...\n")
+
+    with open(filepath, "w") as f:
+
+        f.write("id,time,value\n")
+
+        while (time.time() - time_start_programme) < acq_time:
+
+            # Measure current
+            current_meas = float(
+                instrument_query(my_instr, ":MEAS:CURR?")
+            )
+
+            elapsed_time = time.time() - time_start_programme
+
+            # Save measurement
+            f.write(
+                "{},{:.6f},{:.12e}\n".format(
+                    count,
+                    elapsed_time,
+                    current_meas
+                )
+            )
+            f.flush()
+
+            # Print measurement
+            if count % 100 == 0:
+
+                print(
+                    "Event: {} | Time: {:.2f} s | Current: {:.8e} A".format(
+                        count,
+                        elapsed_time,
+                        current_meas
+                    )
+                )
+
+            count += 1
+            
+            time.sleep(sampling_interval)
+
+    print("\nAcquisition completed!")
+
+except KeyboardInterrupt:
+
+    print("\nAcquisition interrupted by user.")
+
+except Exception as e:
+
+    print("\nERROR:", e)
+
+finally:
+
+    if my_instr is not None:
+        instrument_disconnect(my_instr)
+
+    resource_manager.close()
+
+    print("Total measurements: {}".format(count))
+    print("Data saved in: {}".format(filepath))
 
