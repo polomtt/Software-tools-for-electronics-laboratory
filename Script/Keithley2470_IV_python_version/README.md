@@ -46,9 +46,7 @@ They are located in the block between the `Parameters` and `STOP` comments. **Do
 4. Set `V_set`, `step_voltage`, `delay_new_step`, `double_polarity`.
 5. Check that the `Data/` folder exists next to the script.
 6. Run the script:
-   ```bash
-   python set_voltage.py
-   ```
+   `python3 set_voltage.py`
 7. During the measurement the terminal prints one line per point: `time[s], voltage[V], current[A]`.
 8. At the end `done :)` appears and the plot opens. **Close the plot window** to terminate the program.
 
