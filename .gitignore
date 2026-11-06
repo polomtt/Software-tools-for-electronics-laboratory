@@ -2,4 +2,14 @@
 *.csv
 **/Data/
 Data/
+# Output di PyInstaller
+*.exe
+*.manifest
+*.toc
+*.pyz
+*.pkg
 
+# Cache varie
+.mypy_cache/
+.ruff_cache/
+*.pyc
