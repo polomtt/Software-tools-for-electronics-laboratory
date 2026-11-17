@@ -113,6 +113,7 @@ try:
         num_histo = 0
         times = []
         peaks = []
+        colors = []
         t0 = time.time()
 
         # ---- Loop di acquisizione ----
@@ -142,7 +143,9 @@ try:
             # ------------------------
             ax_spec.cla()
             lambda_max = wavelengths[np.argmax(intensities)]
-            ax_spec.plot(wavelengths, intensities, lw=1, color=wavelength_to_hex(lambda_max))
+            color = wavelength_to_hex(lambda_max)
+
+            ax_spec.plot(wavelengths, intensities, lw=1, color=color)
             ax_spec.set_xlabel("Lunghezza d'onda (nm)")
             ax_spec.set_ylabel("Intensità")
             ax_spec.set_title(f"Ocean Optics {spec.model} - {spec.serial_number}")
@@ -153,11 +156,14 @@ try:
             # ------------------------
             peaks.append(intensities.max())
             times.append(t_acq)
+            colors.append(color)
 
             ax_peak.cla()
-            ax_peak.plot(times, peaks, "-o")
+            ax_peak.plot(times, peaks, "-", color="gray", lw=1, zorder=1)           # linea di collegamento
+            ax_peak.scatter(times, peaks, c=colors, s=30, zorder=2)                 # punti colorati
             ax_peak.set_xlabel("Time [s]")
             ax_peak.set_ylabel("Peak height")
+            ax_peak.grid(True) height")
             ax_peak.grid(True)
 
             fig.tight_layout()

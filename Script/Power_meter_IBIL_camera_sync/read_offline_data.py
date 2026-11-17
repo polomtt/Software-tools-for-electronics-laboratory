@@ -206,7 +206,7 @@ for ibil_file, powermeter_file in file_list:
             max_wavelength = df_ibil.loc[idx_max, "#Wavelength[nm]"]
             
             ax1.plot(df_ibil["#Wavelength[nm]"], df_ibil["Intensity[counts]"],color=wavelength_to_hex(max_wavelength))
-            ax2.plot(float(help),max_intensity,color=wavelength_to_hex(max_wavelength),marker="o",ms=4)
+            ax2.plot(float(help),max_intensity,color=wavelength_to_hex(max_wavelength),marker="o",ms=8)
             max_vector.append(max_intensity)
             time_vector.append(float(help))
             
