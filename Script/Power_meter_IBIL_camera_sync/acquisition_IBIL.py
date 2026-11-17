@@ -163,7 +163,6 @@ try:
             ax_peak.scatter(times, peaks, c=colors, s=30, zorder=2)                 # punti colorati
             ax_peak.set_xlabel("Time [s]")
             ax_peak.set_ylabel("Peak height")
-            ax_peak.grid(True) height")
             ax_peak.grid(True)
 
             fig.tight_layout()
