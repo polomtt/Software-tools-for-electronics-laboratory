@@ -92,8 +92,8 @@ def ramp(my_instr, v_start, v_end, step=0.5, delay=0.3):
 
 ##in Volts
 
-step_voltage = 0.05
-V_set = 0.5
+step_voltage = 0.01
+V_set = 0.1
 
 double_polarity = True
 # Bias sequence definition:
@@ -102,10 +102,9 @@ double_polarity = True
 # (used for I-V characterization under forward/reverse bias)
 
 current_compliance = 1e-3 # in Ampere
-delay_new_step = 0.5 #in secondi
+delay_new_step = 5 #in secondi
 
-sample_name = "GelMA-2PEDOT_2_squezed_covered"
-
+sample_name = "Alginate_OVA_11kPa_D4_CARA_A_SIN100G_CONPORTAMUESTRAS(2)"
 
 ##############################################################################################
 #### STOP
@@ -113,8 +112,8 @@ sample_name = "GelMA-2PEDOT_2_squezed_covered"
 
 
 #instrument_resource_string = "TCPIP::10.196.31.120::inst0::INSTR"
-instrument_resource_string = "TCPIP::10.196.31.73::inst0::INSTR"
-
+#instrument_resource_string = "TCPIP::10.196.31.73::inst0::INSTR" 
+instrument_resource_string = "TCPIP::10.196.31.8::inst0::INSTR"
 
 #================================================================================
 #

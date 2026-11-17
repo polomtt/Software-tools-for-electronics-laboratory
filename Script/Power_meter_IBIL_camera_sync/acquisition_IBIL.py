@@ -4,6 +4,8 @@ import time
 import numpy as np
 import matplotlib.pyplot as plt
 
+import os
+
 from seabreeze.spectrometers import Spectrometer
 from zmq_comm import read_socket
 from converto_nm_to_color import wavelength_to_hex
@@ -61,7 +63,11 @@ t0 = time.time()
 try:
     while True:
         try:
-            value, filename_part, time_integr, num_histo_avg = read_socket(socket)
+            value, filename_part, time_integr, num_histo_avg, IBIL_activated = read_socket(socket)
+
+            output_dir = os.path.join("Data", "IBIL_" + filename_part)
+            os.makedirs(output_dir, exist_ok=True)
+
             num_histo = 0 
             try:
                 spec.integration_time_micros(time_integr * 1000)
@@ -88,7 +94,11 @@ try:
 
                     # Controlla se è arrivato un nuovo comando (stop)
                     try:
-                        value, filename_part, time_integr, num_histo_avg  = read_socket(socket)
+                        value, filename_part, time_integr, num_histo_avg, IBIL_activated = read_socket(socket)
+
+                        output_dir = os.path.join("Data", "IBIL_" + filename_part)
+                        os.makedirs(output_dir, exist_ok=True)
+
                         num_histo = 0 
                         try:
                             spec.integration_time_micros(time_integr * 1000)
