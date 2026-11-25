@@ -1,0 +1,53 @@
+{
+  "instrument": {
+    "resource_string": "TCPIP0::10.196.31.73::inst0::INSTR"
+  },
+
+  "measurement": {
+    "quantity": "current",
+    "quantities": {
+      "current": {
+        "query": ":MEAS:CURR?",
+        "unit": "A",
+        "label": "Current",
+        "setup_commands": ["MEASUREMENT:IMMED:TYPE CURRent"]
+      },
+      "voltage": {
+        "query": ":MEAS:VOLT?",
+        "unit": "V",
+        "label": "Voltage",
+        "setup_commands": []
+      },
+      "resistance": {
+        "query": ":MEAS:RES?",
+        "unit": "Ohm",
+        "label": "Resistance",
+        "setup_commands": []
+      }
+    }
+  },
+
+  "acquisition": {
+    "duration_s": 600000,
+    "sampling_interval_s": 10,
+    "print_every": 100
+  },
+
+  "output": {
+    "directory": "Data",
+    "filename": "cobra",
+    "extension": "csv",
+    "delimiter": ",",
+    "save_config_copy": true
+  },
+
+  "reconnection": {
+    "max_retries": 5,
+    "retry_delay_s": 5
+  },
+
+  "plot": {
+    "enabled": true,
+    "max_points": 500
+  }
+}

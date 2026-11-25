@@ -1,0 +1,22 @@
+{
+    "ip_address": "10.196.31.122",
+    "visa_timeout_ms": 20000,
+
+    "ch1_active": true,
+    "ch2_active": true,
+
+    "n_points": 1000,
+    "bytes_per_point": 1,
+
+    "n_waveforms": 100,
+    "acq_time": null,
+    "trigger_timeout": 10,
+
+    "output_dir": "Data",
+    "filename": "sample3_vbias_100_source_am241",
+
+    "plot": true,
+    "n_plot": 20,
+
+    "echo_commands": false
+}
